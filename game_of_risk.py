@@ -13,6 +13,7 @@ class ComputerPlayer(Player):
     def __init__(self, name):
         super().__init__(name)
         self.is_human = False
+        # TODO: implement algorithm for computer player
 
 
 class HumanPlayer(Player):
@@ -30,17 +31,10 @@ class RiskDeck:
     def draw(self):
         random_card_index = randint(0, len(self.cards) - 1)
         random_card = self.cards[random_card_index]
-        if random_card_index == len(self.cards) - 1:
-            self.cards = self.cards[:random_card_index]
-        else:
-            self.cards = self.cards[:random_card_index] + self.cards[random_card_index + 1:]
+        self.cards.remove(random_card)
         return random_card
 
     def give_back(self, card_list):
-        if len(card_list) != 3:
-            raise Exception('cards can only be returned in sets of 3')
-        if len(self.cards) + len(card_list) > self.card_ceiling:
-            raise Exception('the deck exceeds the {} cards that exist'.format(self.card_ceiling))
         self.cards.extend(card_list)
 
 
@@ -52,13 +46,18 @@ class Territory:
         self.occupying_player = None
         self.occupying_armies = 0
 
+    def is_empty(self):
+        return self.occupying_armies == 0
+
 
 class GameOfRisk:
-    ARMY_MIN = 20
+    ARMY_AWARD_MIN = 3
     CARD_TRADE_INCREMENT = 2
+    INITIAL_ARMY_MIN = 20
     INITIAL_CARD_TRADE = 4
     PLAYER_MIN = 3
     PLAYER_MAX = 6
+    TERRITORIES_MIN_ARMY_AWARD = 8
     TERRITORY_LIMIT = 100
 
     def __init__(self, game_file):
@@ -99,16 +98,50 @@ class GameOfRisk:
             ))
         self.card_deck = RiskDeck(len(self.all_territories))
         self.allocate_armies()
+        self.play()
 
     def allocate_armies(self):
         # The less players there are, the more armies they receive, at an increment of 5
-        num_armies = self.ARMY_MIN + 5 * (self.PLAYER_MAX - len(self.players))
+        num_armies = self.INITIAL_ARMY_MIN + 5 * (self.PLAYER_MAX - len(self.players))
         for player in self.players:
             player.army_count = num_armies
+        # TODO: loop through players and allow each to place a certain amount of armies in a territory
+        # TODO: territories can only be reinforced once all territories have been selected
 
-    def attack_territory(self, attacking_army_count, defending_army_count):
-        high_to_low_attack_rolls = self.roll_dice(attacking_army_count)
-        high_to_low_defend_rolls = self.roll_dice(defending_army_count)
+    def attack_territory(self, attacking_territory, defending_territory, attacking_count, defending_count):
+        attacking_player = attacking_territory.occupying_player
+        defending_player = defending_territory.occupying_player
+        armies_defeated = self.decide_battle(attacking_count, defending_count)
+        if armies_defeated > 0:
+            self.change_armies(defending_territory, -armies_defeated)
+            if defending_territory.is_empty():
+                self.fortify_territory(attacking_territory, defending_territory, attacking_count)
+                defending_territory.occupying_player = attacking_territory.occupying_player
+                attacking_player.controlled_territories.append(defending_territory)
+                defending_player.controlled_territories.remove(defending_territory)
+        elif armies_defeated < 0:
+            self.change_armies(attacking_territory, armies_defeated)
+        else:
+            self.change_armies(attacking_territory, -1)
+            self.change_armies(defending_territory, -1)
+        # Eliminate player from contention if they no longer control any territories
+        if len(defending_player.controlled_territories) == 0:
+            self.players.remove(defending_player)
+            self.eliminated_players.append(defending_player)
+
+    def calculate_reinforcements(self, player):
+        num_territories = len(player.controlled_territories)
+        if num_territories <= self.TERRITORIES_MIN_ARMY_AWARD:
+            armies_from_territories = self.ARMY_AWARD_MIN
+        else:
+            armies_from_territories = num_territories // 3
+        new_card = self.card_deck.draw()
+        armies_from_cards = self.determine_card_match(player, new_card)
+        return armies_from_territories + armies_from_cards
+
+    def decide_battle(self, attacking_count, defending_count):
+        high_to_low_attack_rolls = self.roll_dice(attacking_count)
+        high_to_low_defend_rolls = self.roll_dice(defending_count)
         armies_defeated = 0
         for i in range(len(high_to_low_defend_rolls)):
             if high_to_low_attack_rolls[i] > high_to_low_defend_rolls[i]:
@@ -116,6 +149,27 @@ class GameOfRisk:
             else:
                 armies_defeated -= 1
         return armies_defeated
+
+    def determine_card_match(self, player, current_card):
+        matching_cards = []
+        for card in player.cards:
+            if card == current_card:
+                matching_cards.append(card)
+            if len(matching_cards) == 3:
+                # Remove cards from player and add them back to the deck
+                for match_card in matching_cards:
+                    player.cards.remove(match_card)
+                self.card_deck.give_back(matching_cards)
+                # Award armies based on number of card trades thus far, then adjust award
+                armies_from_cards = self.armies_for_card_trade
+                self.armies_for_card_trade += self.CARD_TRADE_INCREMENT
+                return armies_from_cards
+        player.cards.append(current_card)
+        return 0
+
+    def fortify_territory(self, from_territory, to_territory, num_armies):
+        self.change_armies(from_territory, -num_armies)
+        self.change_armies(to_territory, num_armies)
 
     def get_or_create_territory(self, territory_name, continent_name):
         for territory in self.all_territories:
@@ -127,6 +181,14 @@ class GameOfRisk:
         new_territory = Territory(territory_name, continent_name)
         self.all_territories.append(new_territory)
         return new_territory
+
+    def play(self):
+        current_turn = 0
+        while len(self.players) > 1:
+            self.turn(self.players[current_turn])
+            # Index next player for turn or cycle back to first player
+            current_turn = current_turn + 1 if current_turn < len(self.players) - 1 else 0
+        # TODO: declare winner
 
     def set_players(self, line_info, is_human=True):
         player_type = 'human' if is_human else 'computer'
@@ -166,6 +228,30 @@ class GameOfRisk:
             current_territory.neighbors.extend(neighbor_list)
         except IndexError:
             raise Exception('all territories must belong to a continent and have at least one neighbor')
+
+    def turn(self, player):
+        # Phase 1: reinforce
+        reinforcements = self.calculate_reinforcements(player)
+        # TODO: ask player where they would like to place reinforcements
+        # Phase 2: attack
+        # TODO: ask player if and where they would like to attack a territory
+        # TODO: the territory should simply be fortified if it is already empty
+        # Phase 3: fortify
+        # TODO: ask player where they would like to move troops to and from
+        return 0
+
+    @staticmethod
+    # Accepts positive or negative integer to increase or decrease armies in a territory
+    def change_armies(territory, num_armies):
+        territory.occupying_armies += num_armies
+
+    @staticmethod
+    def get_territories_for_attack(player):
+        territories_for_attack = set()
+        for territory in player.controlled_territories:
+            if territory.occupying_armies > 1:
+                territories_for_attack = territories_for_attack.union(territory.neigbors)
+        return territories_for_attack
 
     @staticmethod
     def roll_dice(num_rolls):
