@@ -60,6 +60,20 @@ class GameOfRisk:
     TERRITORIES_MIN_ARMY_AWARD = 8
     TERRITORY_LIMIT = 100
 
+    """
+    Example text data file below. First line is only title of game, second line is number of human players
+    followed by each of the player names, third line is number of computer players followed by each of the
+    player names, all remaining lines are the name of a territory, then its respective continent, then all
+    of its neighbors. '|' is the delimiter.
+    
+    World War II
+    4|Fred|Becky|Daisy|Luke
+    2|Hal|Terminator
+    France|Europe|Germany|Spain|Italy
+    Japan|Asia|China|Hawaii
+    ...
+    """
+
     def __init__(self, game_file):
         self.title = ''
         self.players = []
