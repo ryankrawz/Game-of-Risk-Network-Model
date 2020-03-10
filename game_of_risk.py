@@ -8,6 +8,9 @@ class Player:
         self.cards = []
         self.army_count = 0
 
+    def __str__(self):
+        return self.name
+
 
 class ComputerPlayer(Player):
     def __init__(self, name):
@@ -48,6 +51,9 @@ class Territory:
 
     def is_empty(self):
         return self.occupying_armies == 0
+
+    def __str__(self):
+        return '{}, {} --> {}'.format(self.name, self.continent, ', '.join([n.name for n in self.neighbors]))
 
 
 class GameOfRisk:
@@ -110,9 +116,23 @@ class GameOfRisk:
                 self.PLAYER_MIN,
                 self.PLAYER_MAX,
             ))
+        for territory in self.all_territories:
+            if not territory.continent:
+                raise Exception('{} has been specified as a neighbor but has not been declared itself'.format(
+                    territory.name
+                ))
         self.card_deck = RiskDeck(len(self.all_territories))
         self.allocate_armies()
-        self.play()
+        # TODO: complete game play functionality
+        # self.play()
+
+    def __str__(self):
+        return '{}\nPlaying: {}\nEliminated: {}\nTerritories:\n{}'.format(
+            self.title,
+            ', '.join([str(p) for p in self.players]),
+            ', '.join([str(e) for e in self.eliminated_players]),
+            '\n'.join([str(t) for t in self.all_territories]),
+        )
 
     def allocate_armies(self):
         # The less players there are, the more armies they receive, at an increment of 5

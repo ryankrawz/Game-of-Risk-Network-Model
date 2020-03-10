@@ -1,0 +1,38 @@
+World War II
+4|Roosevelt|Churchill|Hitler|Mussolini
+2|Stalin|Hirohito
+Great Britain|Europe|France|Belgium|Netherlands|Norway
+France|Europe|Great Britain|Belgium|Germany|Switzerland|Italy
+Belgium|Europe|Netherlands|France|Germany|Great Britain
+Netherlands|Europe|Belgium|Great Britain|Germany
+Switzerland|Europe|Germany|France|Italy|Austria
+Italy|Europe|France|Switzerland|Austria|Yugoslavia|Albania|Greece
+Germany|Europe|France|Belgium|Netherlands|Denmark|Poland|Czechoslovakia|Austria|Switzerland
+Czechoslovakia|Europe|Germany|Poland|Romania|Hungary|Austria
+Austria|Europe|Switzerland|Germany|Czechoslovakia|Hungary|Yugoslavia|Italy
+Yugoslavia|Europe|Italy|Austria|Hungary|Romania|Bulgaria|Greece|Albania
+Norway|Europe|Great Britain|Denmark
+Denmark|Europe|Norway|Germany
+Estonia|Europe|USSR|Latvia
+Latvia|Europe|Estonia|USSR|Poland|Lithuania|East Prussia
+Lithuania|Europe|Latvia|Poland|East Prussia
+East Prussia|Europe|Latvia|Lithuania|Poland
+Poland|Europe|Germany|East Prussia|Lithuania|Latvia|USSR|Romania|Czechoslovakia
+Hungary|Europe|Austria|Czechoslovakia|Romania|Yugoslavia
+Romania|Europe|Hungary|Czechoslovakia|Poland|USSR|Bulgaria|Yugoslavia
+Bulgaria|Europe|Yugoslavia|Romania|Greece
+Greece|Europe|Italy|Albania|Yugoslavia|Bulgaria
+Albania|Europe|Italy|Yugoslavia|Greece
+USSR|Europe|Estonia|Latvia|Poland|Romania|Manchuria|Japan
+Manchuria|Asia|USSR|Japan|Korea|China|Mongolia
+Mongolia|Asia|USSR|Manchuria|China
+Korea|Asia|Japan|China|Manchuria
+Japan|Asia|USSR|Korea|China
+China|Asia|Mongolia|Manchuria|Korea|Japan|Philippines|French Indo-China|Burma
+Burma|Asia|China|French Indo-China|Siam
+Siam|Asia|Burma|French Indo-China|Malaya
+French Indo-China|Asia|Siam|Burma|China|Malaya
+Malaya|Asia|Siam|French Indo-China|Dutch East Indies|Philippines
+Philippines|Asia|China|Malaya
+Dutch East Indies|Asia|Malaya|New Guinea
+New Guinea|Asia|Dutch East Indies
