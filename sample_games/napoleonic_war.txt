@@ -1,0 +1,21 @@
+Napoleonic War
+2|Napoleon|Wellington
+1|Blucher
+Great Britain|Europe|Netherlands|France
+Portugal|Europe|Spain
+Spain|Europe|Portugal|France
+France|Europe|Spain|Great Britain|Netherlands|Prussia|Germany|Switzerland|Sardinia
+Netherlands|Europe|France|Great Britain|Prussia|Germany
+Kingdom of Sweden|Europe|Denmark|Russia
+Denmark|Europe|Kingdom of Sweden|Germany
+Russia|Europe|Kingdom of Sweden|Prussia|Austria|Ottoman Empire
+Germany|Europe|Denmark|Netherlands|Prussia|Austria|Switzerland|France
+Prussia|Europe|Netherlands|France|Russia|Austria|Switzerland
+Switzerland|Europe|France|Germany|Austria|Sardinia
+Austria|Europe|Germany|Prussia|Russia|Ottoman Empire|Papal States|Parma|Sardinia|Switzerland
+Ottoman Empire|Europe|Austria|Sicily|Russia
+Sardinia|Europe|France|Switzerland|Austria|Parma
+Parma|Europe|Sardinia|Austria|Papal States|Tuscany
+Tuscany|Europe|Parma|Papal States
+Papal States|Europe|Parma|Tuscany|Austria|Sicily
+Sicily|Europe|Papal States|Ottoman Empire
