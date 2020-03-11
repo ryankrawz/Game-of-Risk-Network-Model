@@ -1,0 +1,17 @@
+Revolutionary War
+2|America|France
+1|Great Britain
+Maine|North America|New Hampshire
+New Hampshire|North America|New York|Maine|Massachusetts
+Massachusetts|North America|New York|New Hampshire|Connecticut|Rhode Island
+New York|North America|New Hampshire|Massachusetts|Connecticut|New Jersey|Pennsylvania
+Connecticut|North America|New York|Massachusetts|Rhode Island
+Rhode Island|North America|Connecticut|Massachusetts
+Pennsylvania|North America|New York|New Jersey|Delaware|Maryland
+New Jersey|North America|New York|Pennsylvania|Delaware
+Maryland|North America|Pennsylvania|Delaware|Virginia
+Delaware|North America|Maryland|Pennsylvania|New Jersey
+Virginia|North America|Maryland|North Carolina
+North Carolina|North America|Virginia|South Carolina
+South Carolina|North America|North Carolina|Georgia
+Georgia|North America|South Carolina
