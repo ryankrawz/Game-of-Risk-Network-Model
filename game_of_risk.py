@@ -29,7 +29,6 @@ class RiskDeck:
     def __init__(self, card_count):
         each_category = card_count // 3
         self.cards = [1] * each_category + [2] * each_category + [3] * each_category
-        self.card_ceiling = len(self.cards)
 
     def draw(self):
         random_card_index = randint(0, len(self.cards) - 1)
@@ -123,8 +122,6 @@ class GameOfRisk:
                 ))
         self.card_deck = RiskDeck(len(self.all_territories))
         self.allocate_armies()
-        # TODO: complete game play functionality
-        # self.play()
 
     def __str__(self):
         return '{}\nPlaying: {}\nEliminated: {}\nTerritories:\n{}'.format(
@@ -185,6 +182,7 @@ class GameOfRisk:
         return armies_defeated
 
     def determine_card_match(self, player, current_card):
+        player.cards.append(current_card)
         matching_cards = []
         for card in player.cards:
             if card == current_card:
@@ -198,7 +196,6 @@ class GameOfRisk:
                 armies_from_cards = self.armies_for_card_trade
                 self.armies_for_card_trade += self.CARD_TRADE_INCREMENT
                 return armies_from_cards
-        player.cards.append(current_card)
         return 0
 
     def fortify_territory(self, from_territory, to_territory, num_armies):
@@ -284,7 +281,7 @@ class GameOfRisk:
         territories_for_attack = set()
         for territory in player.controlled_territories:
             if territory.occupying_armies > 1:
-                territories_for_attack = territories_for_attack.union(territory.neigbors)
+                territories_for_attack = territories_for_attack.union(territory.neighbors)
         return territories_for_attack
 
     @staticmethod
