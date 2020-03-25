@@ -252,10 +252,10 @@ class GameOfRisk:
             ))
         if i < len(info_items):
             # Number of players indicated < number of names given
-            raise Exception('{} {} players were declared but {} too many names were provided'.format(
+            raise Exception('only {} {} players were declared but {} names were provided'.format(
                 num_players,
                 player_type,
-                len(info_items) - i,
+                len(info_items) - 1,
             ))
 
     def set_territory(self, line_info):
