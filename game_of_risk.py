@@ -136,8 +136,6 @@ class GameOfRisk:
         num_armies = self.INITIAL_ARMY_MIN + 5 * (self.PLAYER_MAX - len(self.players))
         for player in self.players:
             player.army_count = num_armies
-        # TODO: loop through players and allow each to place a certain amount of armies in a territory
-        # TODO: territories can only be reinforced once all territories have been selected
 
     def attack_territory(self, attacking_territory, defending_territory, attacking_count, defending_count):
         attacking_player = attacking_territory.occupying_player
@@ -213,13 +211,24 @@ class GameOfRisk:
         self.all_territories.append(new_territory)
         return new_territory
 
+    def initial_army_placement(self):
+        pass
+        # TODO: loop through players and allow each to place a certain amount of armies in a territory
+        # TODO: territories can only be reinforced once all territories have been selected
+
     def play(self):
+        self.initial_army_placement()
         current_turn = 0
         while len(self.players) > 1:
             self.turn(self.players[current_turn])
             # Index next player for turn or cycle back to first player
             current_turn = current_turn + 1 if current_turn < len(self.players) - 1 else 0
         # TODO: declare winner
+
+    def select_territory_initial(self, player, territory, num_armies):
+        self.change_armies(territory, num_armies)
+        territory.occupying_player = player
+        player.controlled_territories.append(territory)
 
     def set_players(self, line_info, is_human=True):
         player_type = 'human' if is_human else 'computer'
@@ -281,7 +290,8 @@ class GameOfRisk:
         territories_for_attack = set()
         for territory in player.controlled_territories:
             if territory.occupying_armies > 1:
-                territories_for_attack = territories_for_attack.union(territory.neighbors)
+                uncontrolled_territories = {n for n in territory.neighbors if n.occupying_player != player}
+                territories_for_attack = territories_for_attack.union(uncontrolled_territories)
         return territories_for_attack
 
     @staticmethod
