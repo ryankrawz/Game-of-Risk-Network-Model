@@ -136,3 +136,9 @@ class WorldWar2Test(TestCase):
         territories_for_attack = self.g.get_territories_for_attack(self.roosevelt)
         correct = {'Siam', 'Philippines', 'Dutch East Indies', 'French Indo-China', 'Malaya', 'Burma'}
         self.assertEqual({t.name for t in territories_for_attack}, correct)
+
+    def test_select_territory_initial(self):
+        self.g.select_territory_initial(self.roosevelt, self.great_britain, 2)
+        self.assertEqual(self.great_britain.occupying_armies, 2)
+        self.assertEqual(self.great_britain.occupying_player, self.roosevelt)
+        self.assertIn(self.great_britain, self.roosevelt.controlled_territories)
