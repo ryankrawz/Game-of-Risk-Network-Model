@@ -214,9 +214,31 @@ class GameOfRisk:
         return new_territory
 
     def initial_army_placement(self):
-        pass
-        # TODO: loop through players and allow each to place a certain amount of armies in a territory
-        # TODO: territories can only be reinforced once all territories have been selected
+        available_territories = self.all_territories
+        # Claim all initial territories
+        for i in range(len(self.all_territories)):
+            j = 0
+            for territory in available_territories:
+                print('{}: {}, {}'.format(j, territory.name, territory.continent))
+                j += 1
+            selection = int(input('Player {}\'s turn to place. Select the number of the territory you would like to claim'.format(self.players[i % len(self.players)])))
+            initial_selection = available_territories[selection]
+            self.select_territory_initial(self.players[i % len(self.players)], initial_selection, 1)
+            self.players[i % len(self.players)].army_count -= 1
+
+        # Reinforce territories once all have been claimed
+        for player in self.players:
+            while player.army_count > 0:
+                n = 0
+                for territory in player.controlled_territories:
+                    print('{}: {}, {} -- {} armies stationed here'.format(n, territory.name, territory.continent, territory.occupying_armies))
+                    n += 1
+                reinforce_index = int(input('Please select a territory to reinforce'))
+                reinforce_territory = player.controlled_territories[reinforce_index]
+                reinforcement = int(input('How many additional armies would you like to place in {}? (Up to {})'.format(reinforce_territory.name, player.army_count)))
+                reinforce_territory.occupying_armies += reinforcement
+                player.army_count -= reinforcement
+            print('Reinforcement completed.')
 
     def play(self):
         self.initial_army_placement()
@@ -272,11 +294,11 @@ class GameOfRisk:
             raise Exception('all territories must belong to a continent and have at least one neighbor')
 
     def turn(self, player):
-        print('Player {}\'s turn.'.format(player.name))
+        print('{}\'s turn.'.format(player.name))
         # Phase 1: reinforce
         print('PHASE 1: REINFORCE')
         reinforcements = self.calculate_reinforcements(player)
-        
+
         while reinforcements != 0:
             i = 0
             for territory in player.controlled_territories:
@@ -285,7 +307,7 @@ class GameOfRisk:
             reinforced_territory = int(input('Here are the territories that you control.\n Choose the number \
              corresponding to the territory you would like to fortify.'))
             reinforcement_count = int(input('You have {} reinforcements remaining. How many armies \
-             would you like to place in {}?'.format(reinforcements, player.controlled_territories[place])))
+             would you like to place in {}?'.format(reinforcements, player.controlled_territories[place].name)))
 
             self.change_armies(player.controlled_territories[place], reinforcement_count)
             reinforcements -= reinforcement_count
@@ -293,7 +315,7 @@ class GameOfRisk:
 
         # Phase 2: attack
         print('PHASE 2: ATTACK')
-        # TODO: ask player if and where they would like to attack a territory
+
         attack = int(input('Would you like to attack? (1 = yes, 0 = no)'))
         while attack == 1:
             territories_for_attack = self.get_territories_for_attack(player)
