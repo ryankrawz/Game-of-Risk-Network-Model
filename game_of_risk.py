@@ -70,7 +70,7 @@ class GameOfRisk:
     followed by each of the player names, third line is number of computer players followed by each of the
     player names, all remaining lines are the name of a territory, then its respective continent, then all
     of its neighbors. '|' is the delimiter.
-    
+
     World War II
     4|Fred|Becky|Daisy|Luke
     2|Hal|Terminator
@@ -270,15 +270,95 @@ class GameOfRisk:
             raise Exception('all territories must belong to a continent and have at least one neighbor')
 
     def turn(self, player):
+        print('Player {}\'s turn.'.format(player.name))
         # Phase 1: reinforce
+        print('PHASE 1: REINFORCE')
         reinforcements = self.calculate_reinforcements(player)
-        # TODO: ask player where they would like to place reinforcements
+        
+        while reinforcements != 0:
+            i = 0
+            for territory in player.controlled_territories:
+                print('{}: {}, {} -- {} troops'.format(i, territory.name, territory.continent, territory.occupying_armies))
+                i += 1
+            reinforced_territory = int(input('Here are the territories that you control.\n Choose the number \
+             corresponding to the territory you would like to fortify.'))
+            reinforcement_count = int(input('You have {} reinforcements remaining. How many armies \
+             would you like to place in {}?'.format(reinforcements, player.controlled_territories[place])))
+
+            self.change_armies(player.controlled_territories[place], reinforcement_count)
+            reinforcements -= reinforcement_count
+
+
         # Phase 2: attack
+        print('PHASE 2: ATTACK')
         # TODO: ask player if and where they would like to attack a territory
-        # TODO: the territory should simply be fortified if it is already empty
+        attack = int(input('Would you like to attack? (1 = yes, 0 = no)'))
+        while attack == 1:
+            territories_for_attack = self.get_territories_for_attack(player)
+            i = 0
+            # Display available territories to attack
+            for territory in territories_for_attack:
+                print('{}: {}, {} -- {} defending troops'.format(i, territory.name, territory.continent, territory.occupying_armies))
+                i += 1
+            attack_choice = int(input("Which territory would you like to attack? (Please select the number)"))
+            to_be_attacked = territories_for_attack[attack_choice]
+            attacking_territories = self.get_attacking_territories(player, to_be_attacked)
+            # Display available territories to attack with
+            i = 0
+            for territory in attacking_territories:
+                print('{}: {}, {} -- {} available troops for attack'.format(i, territory.name, territory.continent, territory.occupying_armies - 1))
+                i += 1
+            attacking_territory_choice = int(input('Which territory would you like to attack with? (Please select the number)'))
+            to_attack_with = attacking_territories[attacking_territory_choice]
+
+
+            # Engage in battle
+            while True:
+                attacking_armies = int(input('How many armies do you want to attack with? (up to {})'.format(3 if to_attack_with.occupying_armies >= 4 else to_attack_with.occupying_armies - 1)))
+                defending_armies = int(input('{}, how many armies would you like to defend with? (up to {})'.format(to_be_attacked.occupying_player, 2 if to_be_attacked.occupying_armies >= 2 else 1)))
+                self.attack_territory(to_attack_with, to_be_attacked, attacking_armies, defending_armies)
+                print('Remaining attacking armies: {}\nRemaining defending armies: {}'.format(to_attack_with.occupying_armies, to_be_attacked.occupying_armies))
+
+                # Attacker is victorious
+                if to_be_attacked.occupying_armies == 0:
+                    num_armies = int(input('{} won the territory {}. How many armies would you like to move here? (up to {})'.format(to_attack_with.occupying_player, to_be_attacked.name, to_attack_with.occupying_armies - 1)))
+                    self.fortify_territory(to_attack_with, to_be_attacked, num_armies)
+                    break
+
+                # Attacker is defeated
+                elif to_attack_with.occupying_armies == 1:
+                    print('You can no longer attack this territory. You have been defeated.')
+                    break
+
+                # Choose to continue the fight
+                else:
+                    fight = int(input('Would you like to continue the battle? (1 = yes, 0 = no)'))
+                    if fight == 0:
+                        break
+            attack = int(input('Would you like to attack another territory? (1 = yes, 0 = no)'))
+
+
         # Phase 3: fortify
-        # TODO: ask player where they would like to move troops to and from
-        return 0
+        print('PHASE 3: FORTIFY')
+        fortify = int(input('Would you like to fortify any territories? (1 = yes, 0 = no)'))
+        if fortify == 1:
+            while True:
+                i = 0
+                for territory in player.controlled_territories:
+                    print('{}: {}, {} -- {} troops'.format(i, territory.name, territory.continent, territory.occupying_armies))
+                index_from = int(input('Select the territory that you would like to move armies from. (Select the number)'))
+                territory_from = player.controlled_territories[index_from]
+                index_to = int(input('Select the territory that you would like to move armies to. (Select the number)'))
+                territory_to = player.controlled_territories[index_to]
+                num_armies = int(input('How many armies would you like to move from {} to {}? (up to {})'.format(territory_from, territory_to, territory_from.occupying_armies - 1)))
+                self.fortify_territory(territory_from, territory_to, num_armies)
+
+                continue_fortify = int(input('Would you like to continue fortifying? (1 = yes, 0 = no)'))
+                if continue_fortify == 0:
+                    break
+
+        print('End of turn.')
+
 
     @staticmethod
     # Accepts positive or negative integer to increase or decrease armies in a territory
@@ -293,6 +373,16 @@ class GameOfRisk:
                 uncontrolled_territories = {n for n in territory.neighbors if n.occupying_player != player}
                 territories_for_attack = territories_for_attack.union(uncontrolled_territories)
         return territories_for_attack
+
+
+    # input: player and territory to attacking
+    # output: list of owned territories to attack with
+    @staticmethod
+    def get_attacking_territories(player, territory):
+        neighbors = set(territory.neighbors)
+        player_territories = set(player.controlled_territories)
+        attacking_territories = neighbors.intersection(player_territories)
+        return list(attacking_territories)
 
     @staticmethod
     def roll_dice(num_rolls):
