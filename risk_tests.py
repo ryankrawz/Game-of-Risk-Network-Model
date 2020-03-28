@@ -103,10 +103,34 @@ class WorldWar2Test(TestCase):
         self.assertEqual(reinforcements, 6)
 
     @mock.patch('game_of_risk.GameOfRisk.roll_dice')
-    def test_decide_battle(self, roll_dice_mock):
+    def test_decide_battle_tie(self, roll_dice_mock):
         roll_dice_mock.return_value = [5, 4]
         armies_defeated = self.g.decide_battle(2, 2)
         self.assertEqual(armies_defeated, -2)
+
+    @mock.patch('game_of_risk.GameOfRisk.roll_dice')
+    def test_decide_battle_attack_win_2(self, roll_dice_mock):
+        roll_dice_mock.side_effect = [[6, 5, 4], [3, 2]]
+        armies_defeated = self.g.decide_battle(3, 2)
+        self.assertEqual(armies_defeated, 2)
+
+    @mock.patch('game_of_risk.GameOfRisk.roll_dice')
+    def test_decide_battle_attack_win_1(self, roll_dice_mock):
+        roll_dice_mock.side_effect = [[6, 5, 4], [2]]
+        armies_defeated = self.g.decide_battle(3, 1)
+        self.assertEqual(armies_defeated, 1)
+
+    @mock.patch('game_of_risk.GameOfRisk.roll_dice')
+    def test_decide_battle_defense_win_2(self, roll_dice_mock):
+        roll_dice_mock.side_effect = [[2, 1], [3, 2]]
+        armies_defeated = self.g.decide_battle(2, 2)
+        self.assertEqual(armies_defeated, -2)
+
+    @mock.patch('game_of_risk.GameOfRisk.roll_dice')
+    def test_decide_battle_defense_win_1(self, roll_dice_mock):
+        roll_dice_mock.side_effect = [[1], [3, 2]]
+        armies_defeated = self.g.decide_battle(1, 2)
+        self.assertEqual(armies_defeated, -1)
 
     def test_determine_card_match_none(self):
         self.roosevelt.cards = [1, 2, 1, 3]
