@@ -173,6 +173,8 @@ class GameOfRisk:
         high_to_low_defend_rolls = self.roll_dice(defending_count)
         armies_defeated = 0
         for i in range(len(high_to_low_defend_rolls)):
+            if i >= len(high_to_low_attack_rolls):
+                break
             if high_to_low_attack_rolls[i] > high_to_low_defend_rolls[i]:
                 armies_defeated += 1
             else:
