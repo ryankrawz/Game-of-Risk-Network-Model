@@ -407,6 +407,8 @@ class GameOfRisk:
                     fight = int(input('Would you like to continue the battle? (1 = yes, 0 = no) '))
                     if fight == 0:
                         break
+            if not any([t.occupying_armies > 1 for t in player.controlled_territories]):
+                break
             attack = int(input('Would you like to attack another territory? (1 = yes, 0 = no) '))
 
         # Phase 3: fortify
