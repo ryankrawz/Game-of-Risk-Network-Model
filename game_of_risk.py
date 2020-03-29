@@ -381,17 +381,14 @@ class GameOfRisk:
 
                 attack_loss = to_attack_with_count_before - to_attack_with.occupying_armies
                 defend_loss = to_be_attacked_count_before - to_be_attacked.occupying_armies
-                if attack_loss > 0:
-                    losing_territory = to_attack_with
-                    loss_amount = attack_loss
+                if attack_loss > 0 and defend_loss == 0:
+                    self.print_battle_report(to_attack_with, attack_loss)
+                elif defend_loss > 0 and attack_loss == 0:
+                    self.print_battle_report(to_be_attacked, defend_loss)
                 else:
-                    losing_territory = to_be_attacked
-                    loss_amount = defend_loss
-                print('{} lost {} armies from {}.'.format(
-                    losing_territory.occupying_player,
-                    loss_amount,
-                    losing_territory.name
-                ))
+                    self.print_battle_report(to_attack_with, attack_loss)
+                    self.print_battle_report(to_be_attacked, defend_loss)
+
                 print('Remaining attacking armies in {}: {}\nRemaining defending armies in {}: {}'.format(
                     to_attack_with.name,
                     to_attack_with.occupying_armies,
@@ -453,6 +450,14 @@ class GameOfRisk:
                 uncontrolled_territories = {n for n in territory.neighbors if n.occupying_player != player}
                 territories_for_attack = territories_for_attack.union(uncontrolled_territories)
         return list(territories_for_attack)
+
+    @staticmethod
+    def print_battle_report(losing_territory, loss_amount):
+        print('{} lost {} armies from {}.'.format(
+            losing_territory.occupying_player,
+            loss_amount,
+            losing_territory.name
+        ))
 
     @staticmethod
     def print_territory_info(territory_list):
