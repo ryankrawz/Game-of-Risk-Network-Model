@@ -19,6 +19,9 @@ class WorldWar2Test(TestCase):
         self.france.occupying_player = france_player
         self.france.occupying_armies = france_count
 
+    def print_side_effect(self, *args, **kwargs):
+        pass
+
     def test_constructor(self):
         correct = 'World War II\nPlaying: Roosevelt, Churchill, Hitler, Mussolini, Stalin, ' \
                   'Hirohito\nEliminated: \nTerritories:\nGreat Britain, Europe --> France, ' \
@@ -63,9 +66,11 @@ class WorldWar2Test(TestCase):
         self.g.attack_territory(self.great_britain, self.france, 1, 1)
         self.assertEqual(self.france.occupying_armies, 2)
 
+    @mock.patch('builtins.print')
     @mock.patch('game_of_risk.GameOfRisk.decide_battle')
-    def test_attack_territory_attacker_wins_defender_leaves(self, decide_battle_mock):
+    def test_attack_territory_attacker_wins_defender_leaves(self, decide_battle_mock, print_mock):
         decide_battle_mock.return_value = 1
+        print_mock.side_effect = lambda s: None
         self.calibrate_britain_and_france(self.roosevelt, 3, self.churchill, 1)
         self.g.attack_territory(self.great_britain, self.france, 1, 1)
         self.assertEqual(self.france.occupying_armies, 1)

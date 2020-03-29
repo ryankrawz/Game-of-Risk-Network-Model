@@ -155,8 +155,7 @@ class GameOfRisk:
             self.change_armies(defending_territory, -1)
         # Eliminate player from contention if they no longer control any territories
         if len(defending_player.controlled_territories) == 0:
-            self.players.remove(defending_player)
-            self.eliminated_players.append(defending_player)
+            self.eliminate_player(defending_player)
 
     def calculate_reinforcements(self, player):
         num_territories = len(player.controlled_territories)
@@ -198,6 +197,12 @@ class GameOfRisk:
                 return armies_from_cards
         return 0
 
+    def eliminate_player(self, player):
+        self.card_deck.give_back(player.cards)
+        self.players.remove(player)
+        self.eliminated_players.append(player)
+        print('With no remaining territories, {} has been eliminated!'.format(player.name))
+
     def fortify_territory(self, from_territory, to_territory, num_armies):
         self.change_armies(from_territory, -num_armies)
         self.change_armies(to_territory, num_armies)
@@ -217,25 +222,22 @@ class GameOfRisk:
         available_territories = list.copy(self.all_territories)
         # Claim all initial territories
         for i in range(len(self.all_territories)):
-            j = 0
-            for territory in available_territories:
-                print('{}: {}, {}'.format(j, territory.name, territory.continent))
-                j += 1
+            current_player = self.players[i % len(self.players)]
+            self.print_territory_info(available_territories)
             selection = int(
-                input('{}\'s turn to place an army. Select the number of the territory you\'d like to claim: '.format(
-                    self.players[i % len(self.players)].name,
+                input('\n{}\'s turn to place an army. Select the number of the territory you\'d like to claim: '.format(
+                    current_player.name,
                 ))
             )
             initial_selection = available_territories[selection]
-            self.select_territory_initial(self.players[i % len(self.players)], initial_selection, 1)
-            self.players[i % len(self.players)].army_count -= 1
+            self.select_territory_initial(current_player, initial_selection, 1)
             available_territories.remove(initial_selection)
-        print('Initial army placement completed.\n')
+        print('\nInitial army placement completed.\n')
 
         # Reinforce territories once all have been claimed
         for player in self.players:
             if player.army_count > 0:
-                print('{}\'s turn to reinforce territories.'.format(player.name))
+                print('\n{}\'s turn to reinforce territories.'.format(player.name))
             while player.army_count > 0:
                 self.print_territory_info(player.controlled_territories)
                 reinforce_index = int(input('Select the number of a territory you\'d like to reinforce: '))
@@ -248,7 +250,7 @@ class GameOfRisk:
                 )
                 self.change_armies(reinforce_territory, reinforcement)
                 player.army_count -= reinforcement
-        print('Reinforcement completed.\n')
+        print('\nReinforcement completed.\n')
 
     def play(self):
         print('\nGAME OF RISK: {}\n'.format(self.title.upper()))
@@ -264,6 +266,7 @@ class GameOfRisk:
 
     def select_territory_initial(self, player, territory, num_armies):
         self.change_armies(territory, num_armies)
+        player.army_count -= num_armies
         territory.occupying_player = player
         player.controlled_territories.append(territory)
 
@@ -313,17 +316,18 @@ class GameOfRisk:
         print('{}\'s turn.'.format(player.name))
 
         # Phase 1: reinforce
-        print('PHASE 1: REINFORCE')
+        print('\nPHASE 1: REINFORCE\n')
         reinforcements = self.calculate_reinforcements(player)
+        print('You\'ve received {} reinforcements.\n'.format(reinforcements))
 
         while reinforcements > 0:
             self.print_territory_info(player.controlled_territories)
             print('Here are the territories that you control.')
-            reinforce_index = int(input('Select the number of the territory you\'d like to fortify: '))
+            reinforce_index = int(input('Select the number of the territory you\'d like to reinforce: '))
             reinforcement_count = int(
-                input('You have {} reinforcements remaining. How many armies would you like to place in {}? '.format(
-                    reinforcements,
+                input('How many armies would you like to place in {}? (up to {}) '.format(
                     player.controlled_territories[reinforce_index].name,
+                    reinforcements,
                 ))
             )
 
@@ -331,7 +335,7 @@ class GameOfRisk:
             reinforcements -= reinforcement_count
 
         # Phase 2: attack
-        print('\nPHASE 2: ATTACK')
+        print('\nPHASE 2: ATTACK\n')
 
         attack = int(input('Would you like to attack? (1 = yes, 0 = no) '))
         while attack == 1:
@@ -360,7 +364,7 @@ class GameOfRisk:
 
                 # Attacker is victorious
                 if to_be_attacked.occupying_player == player:
-                    print('{} won the territory {} and moved in {} armies.'.format(
+                    print('{} won {} and moved in {} armies.'.format(
                         player.name,
                         to_be_attacked.name,
                         to_be_attacked.occupying_armies,
@@ -371,8 +375,6 @@ class GameOfRisk:
                         ))
                     )
                     self.fortify_territory(to_attack_with, to_be_attacked, num_armies)
-                    if defending_player in self.eliminated_players:
-                        print('With no remaining territories, {} has been eliminated!'.format(defending_player.name))
                     break
 
                 print('Remaining attacking armies in {}: {}\nRemaining defending armies in {}: {}'.format(
@@ -395,7 +397,7 @@ class GameOfRisk:
             attack = int(input('Would you like to attack another territory? (1 = yes, 0 = no) '))
 
         # Phase 3: fortify
-        print('\nPHASE 3: FORTIFY')
+        print('\nPHASE 3: FORTIFY\n')
 
         fortify = int(input('Would you like to fortify any territories? (1 = yes, 0 = no) '))
         if fortify == 1:
