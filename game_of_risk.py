@@ -343,7 +343,7 @@ class GameOfRisk:
             self.print_territory_info(territories_for_attack)
             attack_choice = int(input('Select the number of the territory you\'d like to attack: '))
             to_be_attacked = territories_for_attack[attack_choice]
-            attacking_territories = self.get_attacking_territories(player, to_be_attacked)
+            attacking_territories = self.get_surrounding_territories(player, to_be_attacked, attack=True)
             # Display available territories to attack from
             self.print_territory_info(attacking_territories)
             attacking_territory_choice = int(input('Select the number of the territory you\'d like to attack from: '))
@@ -419,7 +419,7 @@ class GameOfRisk:
             self.print_territory_info(player.controlled_territories)
             index_from = int(input('Select the number of the territory you\'d like to move armies from: '))
             territory_from = player.controlled_territories[index_from]
-            occupied_neighbors = self.get_attacking_territories(player, territory_from)
+            occupied_neighbors = self.get_surrounding_territories(player, territory_from)
             self.print_territory_info(occupied_neighbors)
             index_to = int(input('Select the number of the territory you\'d like to move armies to: '))
             territory_to = occupied_neighbors[index_to]
@@ -439,9 +439,10 @@ class GameOfRisk:
     # input: player and territory to attacking
     # output: list of owned territories to attack from
     @staticmethod
-    def get_attacking_territories(player, territory):
+    def get_surrounding_territories(player, territory, attack=False):
+        army_req = 1 if attack else 0
         neighbors = set(territory.neighbors)
-        player_territories = {t for t in player.controlled_territories if t.occupying_armies > 1}
+        player_territories = {t for t in player.controlled_territories if t.occupying_armies > army_req}
         attacking_territories = neighbors.intersection(player_territories)
         return list(attacking_territories)
 
