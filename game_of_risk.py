@@ -338,31 +338,31 @@ class GameOfRisk:
         print('\nPHASE 2: ATTACK\n')
 
         attack = int(input('Would you like to attack? (1 = yes, 0 = no) '))
-        while attack == 1:
+        while attack == 1 and len(self.players) > 1:
             territories_for_attack = self.get_territories_for_attack(player)
             self.print_territory_info(territories_for_attack)
             attack_choice = int(input('Select the number of the territory you\'d like to attack: '))
             to_be_attacked = territories_for_attack[attack_choice]
             attacking_territories = self.get_attacking_territories(player, to_be_attacked)
-            # Display available territories to attack with
+            # Display available territories to attack from
             self.print_territory_info(attacking_territories)
-            attacking_territory_choice = int(input('Select the number of the territory you\'d like to attack with: '))
-            to_attack_with = attacking_territories[attacking_territory_choice]
+            attacking_territory_choice = int(input('Select the number of the territory you\'d like to attack from: '))
+            to_attack_from = attacking_territories[attacking_territory_choice]
 
             # Engage in battle
             while True:
                 defending_player = to_be_attacked.occupying_player
                 attacking_armies = int(input('How many armies do you want to attack with? (up to {}) '.format(
-                    3 if to_attack_with.occupying_armies >= 4 else to_attack_with.occupying_armies - 1,
+                    3 if to_attack_from.occupying_armies >= 4 else to_attack_from.occupying_armies - 1,
                 )))
                 defending_armies = int(input('{}, how many armies do you want to defend {} with? (up to {}) '.format(
                     defending_player.name,
                     to_be_attacked.name,
                     2 if to_be_attacked.occupying_armies >= 2 else 1,
                 )))
-                to_attack_with_count_before = to_attack_with.occupying_armies
+                to_attack_with_count_before = to_attack_from.occupying_armies
                 to_be_attacked_count_before = to_be_attacked.occupying_armies
-                self.attack_territory(to_attack_with, to_be_attacked, attacking_armies, defending_armies)
+                self.attack_territory(to_attack_from, to_be_attacked, attacking_armies, defending_armies)
 
                 # Attacker is victorious
                 if to_be_attacked.occupying_player == player:
@@ -371,33 +371,34 @@ class GameOfRisk:
                         to_be_attacked.name,
                         to_be_attacked.occupying_armies,
                     ))
-                    num_armies = int(
-                        input('How many additional armies would you like to move there? (up to {}) '.format(
-                            to_attack_with.occupying_armies - 1,
-                        ))
-                    )
-                    self.fortify_territory(to_attack_with, to_be_attacked, num_armies)
+                    if to_attack_from.occupying_armies - 1 > 0:
+                        num_armies = int(
+                            input('How many additional armies would you like to move there? (up to {}) '.format(
+                                to_attack_from.occupying_armies - 1,
+                            ))
+                        )
+                        self.fortify_territory(to_attack_from, to_be_attacked, num_armies)
                     break
 
-                attack_loss = to_attack_with_count_before - to_attack_with.occupying_armies
+                attack_loss = to_attack_with_count_before - to_attack_from.occupying_armies
                 defend_loss = to_be_attacked_count_before - to_be_attacked.occupying_armies
                 if attack_loss > 0 and defend_loss == 0:
-                    self.print_battle_report(to_attack_with, attack_loss)
+                    self.print_battle_report(to_attack_from, attack_loss)
                 elif defend_loss > 0 and attack_loss == 0:
                     self.print_battle_report(to_be_attacked, defend_loss)
                 else:
-                    self.print_battle_report(to_attack_with, attack_loss)
+                    self.print_battle_report(to_attack_from, attack_loss)
                     self.print_battle_report(to_be_attacked, defend_loss)
 
                 print('Remaining attacking armies in {}: {}\nRemaining defending armies in {}: {}'.format(
-                    to_attack_with.name,
-                    to_attack_with.occupying_armies,
+                    to_attack_from.name,
+                    to_attack_from.occupying_armies,
                     to_be_attacked.name,
                     to_be_attacked.occupying_armies,
                 ))
 
                 # Attacker is defeated
-                if to_attack_with.occupying_armies == 1:
+                if to_attack_from.occupying_armies == 1:
                     print('You can no longer attack this territory. You have been defeated.')
                     break
 
@@ -411,7 +412,9 @@ class GameOfRisk:
         # Phase 3: fortify
         print('\nPHASE 3: FORTIFY\n')
 
-        fortify = int(input('Would you like to fortify any territories? (1 = yes, 0 = no) '))
+        fortify = 0
+        if len(self.players) > 1:
+            fortify = int(input('Would you like to fortify any territories? (1 = yes, 0 = no) '))
         if fortify == 1:
             self.print_territory_info(player.controlled_territories)
             index_from = int(input('Select the number of the territory you\'d like to move armies from: '))
@@ -434,11 +437,11 @@ class GameOfRisk:
         territory.occupying_armies += num_armies
 
     # input: player and territory to attacking
-    # output: list of owned territories to attack with
+    # output: list of owned territories to attack from
     @staticmethod
     def get_attacking_territories(player, territory):
         neighbors = set(territory.neighbors)
-        player_territories = set(player.controlled_territories)
+        player_territories = {t for t in player.controlled_territories if t.occupying_armies > 1}
         attacking_territories = neighbors.intersection(player_territories)
         return list(attacking_territories)
 
