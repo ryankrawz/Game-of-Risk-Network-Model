@@ -360,6 +360,8 @@ class GameOfRisk:
                     to_be_attacked.name,
                     2 if to_be_attacked.occupying_armies >= 2 else 1,
                 )))
+                to_attack_with_count_before = to_attack_with.occupying_armies
+                to_be_attacked_count_before = to_be_attacked.occupying_armies
                 self.attack_territory(to_attack_with, to_be_attacked, attacking_armies, defending_armies)
 
                 # Attacker is victorious
@@ -377,6 +379,19 @@ class GameOfRisk:
                     self.fortify_territory(to_attack_with, to_be_attacked, num_armies)
                     break
 
+                attack_loss = to_attack_with_count_before - to_attack_with.occupying_armies
+                defend_loss = to_be_attacked_count_before - to_be_attacked.occupying_armies
+                if attack_loss > 0:
+                    losing_territory = to_attack_with
+                    loss_amount = attack_loss
+                else:
+                    losing_territory = to_be_attacked
+                    loss_amount = defend_loss
+                print('{} lost {} armies from {}.'.format(
+                    losing_territory.occupying_player,
+                    loss_amount,
+                    losing_territory.name
+                ))
                 print('Remaining attacking armies in {}: {}\nRemaining defending armies in {}: {}'.format(
                     to_attack_with.name,
                     to_attack_with.occupying_armies,
