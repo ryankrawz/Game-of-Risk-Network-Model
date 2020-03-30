@@ -448,19 +448,21 @@ class GameOfRisk:
     @staticmethod
     def get_surrounding_territories(player, territory, attack=False):
         army_req = 1 if attack else 0
-        neighbors = set(territory.neighbors)
-        player_territories = {t for t in player.controlled_territories if t.occupying_armies > army_req}
-        attacking_territories = neighbors.intersection(player_territories)
-        return list(attacking_territories)
+        surrounding_territories = []
+        for neighbor in territory.neighbors:
+            if neighbor.occupying_player == player and neighbor.occupying_armies > army_req:
+                surrounding_territories.append(neighbor)
+        return surrounding_territories
 
     @staticmethod
     def get_territories_for_attack(player):
-        territories_for_attack = set()
+        territories_for_attack = []
         for territory in player.controlled_territories:
             if territory.occupying_armies > 1:
-                uncontrolled_territories = {n for n in territory.neighbors if n.occupying_player != player}
-                territories_for_attack = territories_for_attack.union(uncontrolled_territories)
-        return list(territories_for_attack)
+                for neighbor in territory.neighbors:
+                    if neighbor.occupying_player != player and neighbor not in territories_for_attack:
+                        territories_for_attack.append(neighbor)
+        return territories_for_attack
 
     @staticmethod
     def print_battle_report(losing_territory, loss_amount):
