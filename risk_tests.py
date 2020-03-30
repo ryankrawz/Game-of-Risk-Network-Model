@@ -3,13 +3,108 @@ from unittest import mock, TestCase
 from game_of_risk import GameOfRisk
 
 
+class RevolutionaryWarAllHumanTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.print_patch = mock.patch('builtins.print', side_effect=lambda s: None)
+        self.print_patch.start()
+        self.g = GameOfRisk('test_games/revolutionary_war_all_human.txt')
+        self.america = self.g.players[0]
+        self.france = self.g.players[1]
+        self.great_britain = self.g.players[2]
+        self.massachusetts = self.g.all_territories[3]
+        self.new_york = self.g.all_territories[2]
+        self.maryland = self.g.all_territories[9]
+        self.virginia = self.g.all_territories[10]
+        self.place_armies()
+
+    def tearDown(self):
+        super().tearDown()
+        self.print_patch.stop()
+
+    @mock.patch('builtins.input')
+    def place_armies(self, input_mock):
+        input_mock.side_effect = ['0', '8', '11', '0', '6', '8', '1', '3', '5', '1', '2',
+                                  '2', '1', '0', '2', '30', '0', '15', '4', '15', '3', '31']
+        self.g.initial_army_placement()
+
+    def test_initial_army_placement(self):
+        self.assertEqual(self.massachusetts.occupying_player, self.america)
+        self.assertEqual(self.massachusetts.occupying_armies, 31)
+        self.assertEqual(self.new_york.occupying_player, self.france)
+        self.assertEqual(self.new_york.occupying_armies, 16)
+        self.assertEqual(self.maryland.occupying_player, self.france)
+        self.assertEqual(self.maryland.occupying_armies, 16)
+        self.assertEqual(self.virginia.occupying_player, self.great_britain)
+        self.assertEqual(self.virginia.occupying_armies, 32)
+
+    @mock.patch('game_of_risk.GameOfRisk.calculate_reinforcements')
+    @mock.patch('game_of_risk.GameOfRisk.roll_dice')
+    @mock.patch('builtins.input')
+    def test_turn_single_attack_no_fortify(self, input_mock, roll_dice_mock, reinforcements_mock):
+        input_mock.side_effect = ['2', '3', '1', '0', '0', '3', '2', '0', '0', '0']
+        roll_dice_mock.side_effect = [[5, 3, 1], [5, 2]]
+        reinforcements_mock.return_value = 3
+        self.g.turn(self.america)
+        self.assertEqual(self.massachusetts.occupying_armies, 33)
+        self.assertEqual(self.new_york.occupying_armies, 15)
+
+    @mock.patch('game_of_risk.GameOfRisk.calculate_reinforcements')
+    @mock.patch('game_of_risk.GameOfRisk.roll_dice')
+    @mock.patch('builtins.input')
+    def test_turn_full_attack_with_fortify(self, input_mock, roll_dice_mock, reinforcements_mock):
+        input_mock.side_effect = ['3', '3', '1', '0', '0', '3', '2', '1', '3', '2', '1', '3', '2',
+                                  '1', '3', '2', '1', '3', '2', '1', '3', '2', '1', '3', '2', '1',
+                                  '3', '2', '10', '0', '1', '3', '0', '2']
+        roll_dice_mock.side_effect = [[6, 5, 4], [1, 2], [6, 5, 4], [1, 2], [6, 5, 4], [1, 2],
+                                      [6, 5, 4], [1, 2], [6, 5, 4], [1, 2], [6, 5, 4], [1, 2],
+                                      [6, 5, 4], [1, 2], [6, 5, 4], [1, 2]]
+        reinforcements_mock.return_value = 3
+        self.g.turn(self.great_britain)
+        self.assertEqual(self.virginia.occupying_armies, 20)
+        self.assertEqual(self.maryland.occupying_player, self.great_britain)
+        self.assertEqual(self.maryland.occupying_armies, 15)
+
+    @mock.patch('game_of_risk.GameOfRisk.print_battle_report')
+    @mock.patch('game_of_risk.GameOfRisk.calculate_reinforcements')
+    @mock.patch('game_of_risk.GameOfRisk.roll_dice')
+    @mock.patch('builtins.input')
+    def test_turn_victory(self, input_mock, roll_dice_mock, reinforcements_mock, battle_report_mock):
+        input_mock.side_effect = ['0', '3', '1', '0', '0', '1', '1']
+        roll_dice_mock.side_effect = [[3], [1]]
+        reinforcements_mock.return_value = 3
+        self.g.players.remove(self.great_britain)
+        self.g.eliminated_players.append(self.great_britain)
+        maine = self.g.all_territories[0]
+        new_hampshire = self.g.all_territories[1]
+        for t in self.g.all_territories[2:]:
+            t.occupying_player = self.france
+            t.occupying_armies = 1
+        maine.occupying_armies = 1
+        new_hampshire.occupying_player = self.france
+        new_hampshire.occupying_armies = 10
+        self.america.controlled_territories = [maine]
+        self.france.controlled_territories = self.g.all_territories[1:]
+        self.g.turn(self.france)
+        self.assertEqual(len(self.g.players), 1)
+        self.assertEqual(len(self.g.eliminated_players), 2)
+        battle_report_mock.assert_not_called()
+
+
 class WorldWar2Test(TestCase):
     def setUp(self):
+        super().setUp()
+        self.print_patch = mock.patch('builtins.print', side_effect=lambda s: None)
+        self.print_patch.start()
         self.g = GameOfRisk('test_games/world_war_2_test.txt')
         self.roosevelt = self.g.players[0]
         self.churchill = self.g.players[1]
         self.great_britain = self.g.all_territories[0]
         self.france = self.g.all_territories[1]
+
+    def tearDown(self):
+        super().tearDown()
+        self.print_patch.stop()
 
     def calibrate_britain_and_france(self, britain_player, britain_count, france_player, france_count):
         britain_player.controlled_territories.append(self.great_britain)
@@ -18,9 +113,6 @@ class WorldWar2Test(TestCase):
         france_player.controlled_territories.append(self.france)
         self.france.occupying_player = france_player
         self.france.occupying_armies = france_count
-
-    def print_side_effect(self, *args, **kwargs):
-        pass
 
     def test_constructor(self):
         correct = 'World War II\nPlaying: Roosevelt, Churchill, Hitler, Mussolini, Stalin, ' \
@@ -66,11 +158,9 @@ class WorldWar2Test(TestCase):
         self.g.attack_territory(self.great_britain, self.france, 1, 1)
         self.assertEqual(self.france.occupying_armies, 2)
 
-    @mock.patch('builtins.print')
     @mock.patch('game_of_risk.GameOfRisk.decide_battle')
-    def test_attack_territory_attacker_wins_defender_leaves(self, decide_battle_mock, print_mock):
+    def test_attack_territory_attacker_wins_defender_leaves(self, decide_battle_mock):
         decide_battle_mock.return_value = 1
-        print_mock.side_effect = lambda s: None
         self.calibrate_britain_and_france(self.roosevelt, 3, self.churchill, 1)
         self.g.attack_territory(self.great_britain, self.france, 1, 1)
         self.assertEqual(self.france.occupying_armies, 1)

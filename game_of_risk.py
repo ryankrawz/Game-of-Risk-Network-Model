@@ -201,7 +201,7 @@ class GameOfRisk:
         self.card_deck.give_back(player.cards)
         self.players.remove(player)
         self.eliminated_players.append(player)
-        print('With no remaining territories, {} has been eliminated!'.format(player.name))
+        print('\nWith no remaining territories, {} has been eliminated!'.format(player.name))
 
     def fortify_territory(self, from_territory, to_territory, num_armies):
         self.change_armies(from_territory, -num_armies)
@@ -313,7 +313,8 @@ class GameOfRisk:
             raise Exception('all territories must belong to a continent and have at least one neighbor')
 
     def turn(self, player):
-        print('{}\'s turn.'.format(player.name))
+        border = '-' * (len(player.name) + 12)
+        print('{0}\n| {1}\'s turn. |\n{0}'.format(border, player.name))
 
         # Phase 1: reinforce
         print('\nPHASE 1: REINFORCE\n')
@@ -335,9 +336,12 @@ class GameOfRisk:
             reinforcements -= reinforcement_count
 
         # Phase 2: attack
-        print('\nPHASE 2: ATTACK\n')
+        territories_for_attack = self.get_territories_for_attack(player)
 
-        attack = int(input('Would you like to attack? (1 = yes, 0 = no) '))
+        attack = 0
+        if len(territories_for_attack) > 0:
+            print('\nPHASE 2: ATTACK\n')
+            attack = int(input('Would you like to attack? (1 = yes, 0 = no) '))
         while attack == 1 and len(self.players) > 1:
             territories_for_attack = self.get_territories_for_attack(player)
             self.print_territory_info(territories_for_attack)
@@ -366,11 +370,13 @@ class GameOfRisk:
 
                 # Attacker is victorious
                 if to_be_attacked.occupying_player == player:
-                    print('{} won {} and moved in {} armies.'.format(
+                    print('\n{} won {} and moved in {} armies.'.format(
                         player.name,
                         to_be_attacked.name,
                         to_be_attacked.occupying_armies,
                     ))
+                    if len(self.players) == 1:
+                        return
                     if to_attack_from.occupying_armies - 1 > 0:
                         num_armies = int(
                             input('How many additional armies would you like to move there? (up to {}) '.format(
@@ -382,6 +388,7 @@ class GameOfRisk:
 
                 attack_loss = to_attack_with_count_before - to_attack_from.occupying_armies
                 defend_loss = to_be_attacked_count_before - to_be_attacked.occupying_armies
+                print('\n')
                 if attack_loss > 0 and defend_loss == 0:
                     self.print_battle_report(to_attack_from, attack_loss)
                 elif defend_loss > 0 and attack_loss == 0:
@@ -390,7 +397,7 @@ class GameOfRisk:
                     self.print_battle_report(to_attack_from, attack_loss)
                     self.print_battle_report(to_be_attacked, defend_loss)
 
-                print('Remaining attacking armies in {}: {}\nRemaining defending armies in {}: {}'.format(
+                print('\nRemaining attacking armies in {}: {}\nRemaining defending armies in {}: {}'.format(
                     to_attack_from.name,
                     to_attack_from.occupying_armies,
                     to_be_attacked.name,
@@ -399,7 +406,7 @@ class GameOfRisk:
 
                 # Attacker is defeated
                 if to_attack_from.occupying_armies == 1:
-                    print('You can no longer attack this territory. You have been defeated.')
+                    print('\nYou can no longer attack this territory. You have been defeated.')
                     break
 
                 # Choose to continue the fight
@@ -414,9 +421,7 @@ class GameOfRisk:
         # Phase 3: fortify
         print('\nPHASE 3: FORTIFY\n')
 
-        fortify = 0
-        if len(self.players) > 1:
-            fortify = int(input('Would you like to fortify any territories? (1 = yes, 0 = no) '))
+        fortify = int(input('Would you like to fortify any territories? (1 = yes, 0 = no) '))
         if fortify == 1:
             self.print_territory_info(player.controlled_territories)
             index_from = int(input('Select the number of the territory you\'d like to move armies from: '))
@@ -431,7 +436,7 @@ class GameOfRisk:
                 territory_from.occupying_armies - 1,
             )))
             self.fortify_territory(territory_from, territory_to, num_armies)
-        print('End of turn.\n')
+        print('\nEnd of turn.\n')
 
     @staticmethod
     # Accepts positive or negative integer to increase or decrease armies in a territory
@@ -459,14 +464,17 @@ class GameOfRisk:
 
     @staticmethod
     def print_battle_report(losing_territory, loss_amount):
-        print('{} lost {} armies from {}.'.format(
+        army_description = 'armies' if loss_amount > 1 else 'army'
+        print('{} lost {} {} from {}.'.format(
             losing_territory.occupying_player,
             loss_amount,
-            losing_territory.name
+            army_description,
+            losing_territory.name,
         ))
 
     @staticmethod
     def print_territory_info(territory_list):
+        print('\n')
         for i, territory in enumerate(territory_list):
             print('[{}] {}, {} -- {} armies'.format(
                 i,
@@ -474,6 +482,7 @@ class GameOfRisk:
                 territory.continent,
                 territory.occupying_armies,
             ))
+        print('\n')
 
     @staticmethod
     def roll_dice(num_rolls):
