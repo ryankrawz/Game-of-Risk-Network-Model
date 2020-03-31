@@ -247,14 +247,32 @@ class WorldWar2Test(TestCase):
         self.assertEqual(self.great_britain.occupying_armies, 2)
         self.assertEqual(self.france.occupying_armies, 4)
 
+    def test_get_surrounding_territories_attack(self):
+        territory_army_counts = [1, 2, 1, 2, 2]
+        for i in range(len(self.france.neighbors[:3])):
+            self.france.neighbors[i].occupying_player = self.roosevelt
+            self.france.neighbors[i].occupying_armies = territory_army_counts[i]
+        surrounding_territories = self.g.get_surrounding_territories(self.roosevelt, self.france, attack=True)
+        correct = ['Belgium']
+        self.assertEqual([t.name for t in surrounding_territories], correct)
+
+    def test_get_surrounding_territories_no_attack(self):
+        territory_army_counts = [1, 2, 1, 2, 2]
+        for i in range(len(self.france.neighbors[:3])):
+            self.france.neighbors[i].occupying_player = self.roosevelt
+            self.france.neighbors[i].occupying_armies = territory_army_counts[i]
+        surrounding_territories = self.g.get_surrounding_territories(self.roosevelt, self.france)
+        correct = ['Great Britain', 'Belgium', 'Germany']
+        self.assertEqual([t.name for t in surrounding_territories], correct)
+
     def test_get_territories_for_attack(self):
         self.roosevelt.controlled_territories = self.g.all_territories[-5:]
         territory_army_counts = [1, 2, 2, 1, 1]
         for i in range(len(self.roosevelt.controlled_territories)):
             self.roosevelt.controlled_territories[i].occupying_armies = territory_army_counts[i]
         territories_for_attack = self.g.get_territories_for_attack(self.roosevelt)
-        correct = {'Siam', 'Philippines', 'Dutch East Indies', 'French Indo-China', 'Malaya', 'Burma'}
-        self.assertEqual({t.name for t in territories_for_attack}, correct)
+        correct = ['Burma', 'French Indo-China', 'Malaya', 'Siam', 'Dutch East Indies', 'Philippines']
+        self.assertEqual([t.name for t in territories_for_attack], correct)
 
     def test_select_territory_initial(self):
         self.g.select_territory_initial(self.roosevelt, self.great_britain, 2)
