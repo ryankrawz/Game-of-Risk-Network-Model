@@ -1,6 +1,25 @@
 from unittest import mock, TestCase
 
 from game_of_risk import GameOfRisk
+from input_utilities import retrieve_numerical_input
+
+
+class InputUtilitiesTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.print_patch = mock.patch('builtins.print', side_effect=lambda s: None)
+        self.print_patch.start()
+
+    def tearDown(self):
+        super().tearDown()
+        self.print_patch.stop()
+
+    @mock.patch('builtins.input')
+    def test_retrieve_numerical_input(self, input_mock):
+        input_mock.side_effect = ['-1', '10', 'xyz', '5', '4']
+        query = 'How many armies? (Up to {}) '.format(4)
+        input_num = retrieve_numerical_input(query, 4)
+        self.assertEqual(input_num, 4)
 
 
 class RevolutionaryWarAllHumanTest(TestCase):
@@ -55,7 +74,7 @@ class RevolutionaryWarAllHumanTest(TestCase):
     def test_turn_full_attack_with_fortify(self, input_mock, roll_dice_mock, reinforcements_mock):
         input_mock.side_effect = ['3', '3', '1', '0', '0', '3', '2', '1', '3', '2', '1', '3', '2',
                                   '1', '3', '2', '1', '3', '2', '1', '3', '2', '1', '3', '2', '1',
-                                  '3', '2', '10', '0', '1', '3', '0', '2']
+                                  '3', '2', '10', '0', '1', '0', '0', '2']
         roll_dice_mock.side_effect = [[6, 5, 4], [1, 2], [6, 5, 4], [1, 2], [6, 5, 4], [1, 2],
                                       [6, 5, 4], [1, 2], [6, 5, 4], [1, 2], [6, 5, 4], [1, 2],
                                       [6, 5, 4], [1, 2], [6, 5, 4], [1, 2]]
@@ -273,6 +292,16 @@ class WorldWar2Test(TestCase):
         territories_for_attack = self.g.get_territories_for_attack(self.roosevelt)
         correct = ['Burma', 'French Indo-China', 'Malaya', 'Siam', 'Dutch East Indies', 'Philippines']
         self.assertEqual([t.name for t in territories_for_attack], correct)
+
+    def test_get_territories_to_fortify(self):
+        self.roosevelt.controlled_territories = self.g.all_territories[-5:]
+        territory_army_counts = [1, 2, 2, 1, 1]
+        for i in range(len(self.roosevelt.controlled_territories)):
+            self.roosevelt.controlled_territories[i].occupying_player = self.roosevelt
+            self.roosevelt.controlled_territories[i].occupying_armies = territory_army_counts[i]
+        territories_to_fortify = self.g.get_territories_to_fortify(self.roosevelt)
+        correct = ['Burma', 'Malaya', 'Siam', 'Dutch East Indies']
+        self.assertEqual([t.name for t in territories_to_fortify], correct)
 
     def test_select_territory_initial(self):
         self.g.select_territory_initial(self.roosevelt, self.great_britain, 2)

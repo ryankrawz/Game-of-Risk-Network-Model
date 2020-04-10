@@ -1,5 +1,7 @@
 from random import randint
 
+from input_utilities import retrieve_numerical_input
+
 
 class Player:
     def __init__(self, name):
@@ -224,11 +226,10 @@ class GameOfRisk:
         for i in range(len(self.all_territories)):
             current_player = self.players[i % len(self.players)]
             self.print_territory_info(available_territories)
-            selection = int(
-                input('\n{}\'s turn to place an army. Select the number of the territory you\'d like to claim: '.format(
-                    current_player.name,
-                ))
+            query = '\n{}\'s turn to place an army. Select the number of the territory you\'d like to claim: '.format(
+                current_player.name,
             )
+            selection = retrieve_numerical_input(query, len(available_territories) - 1)
             initial_selection = available_territories[selection]
             self.select_territory_initial(current_player, initial_selection, 1)
             available_territories.remove(initial_selection)
@@ -240,14 +241,17 @@ class GameOfRisk:
                 print('\n{}\'s turn to reinforce territories.'.format(player.name))
             while player.army_count > 0:
                 self.print_territory_info(player.controlled_territories)
-                reinforce_index = int(input('Select the number of a territory you\'d like to reinforce: '))
-                reinforce_territory = player.controlled_territories[reinforce_index]
-                reinforcement = int(
-                    input('How many additional armies would you like to place in {}? (Up to {}) '.format(
-                        reinforce_territory.name,
-                        player.army_count,
-                    ))
+                query = 'Select the number of a territory you\'d like to reinforce: '
+                reinforce_index = retrieve_numerical_input(
+                    query,
+                    len(player.controlled_territories) - 1,
                 )
+                reinforce_territory = player.controlled_territories[reinforce_index]
+                query = 'How many additional armies would you like to place in {}? (Up to {}) '.format(
+                    reinforce_territory.name,
+                    player.army_count,
+                )
+                reinforcement = retrieve_numerical_input(query, player.army_count)
                 self.change_armies(reinforce_territory, reinforcement)
                 player.army_count -= reinforcement
         print('\nReinforcement completed.\n')
@@ -324,14 +328,13 @@ class GameOfRisk:
         while reinforcements > 0:
             self.print_territory_info(player.controlled_territories)
             print('Here are the territories that you control.')
-            reinforce_index = int(input('Select the number of the territory you\'d like to reinforce: '))
-            reinforcement_count = int(
-                input('How many armies would you like to place in {}? (up to {}) '.format(
-                    player.controlled_territories[reinforce_index].name,
-                    reinforcements,
-                ))
+            query = 'Select the number of the territory you\'d like to reinforce: '
+            reinforce_index = retrieve_numerical_input(query, len(player.controlled_territories) - 1)
+            query = 'How many armies would you like to place in {}? (up to {}) '.format(
+                player.controlled_territories[reinforce_index].name,
+                reinforcements,
             )
-
+            reinforcement_count = retrieve_numerical_input(query, reinforcements)
             self.change_armies(player.controlled_territories[reinforce_index], reinforcement_count)
             reinforcements -= reinforcement_count
 
@@ -341,29 +344,34 @@ class GameOfRisk:
         attack = 0
         if len(territories_for_attack) > 0:
             print('\nPHASE 2: ATTACK\n')
-            attack = int(input('Would you like to attack? (1 = yes, 0 = no) '))
+            query = 'Would you like to attack? (1 = yes, 0 = no) '
+            attack = retrieve_numerical_input(query, 1)
         while attack == 1 and len(self.players) > 1:
             territories_for_attack = self.get_territories_for_attack(player)
             self.print_territory_info(territories_for_attack)
-            attack_choice = int(input('Select the number of the territory you\'d like to attack: '))
+            query = 'Select the number of the territory you\'d like to attack: '
+            attack_choice = retrieve_numerical_input(query, len(territories_for_attack) - 1)
             to_be_attacked = territories_for_attack[attack_choice]
             attacking_territories = self.get_surrounding_territories(player, to_be_attacked, attack=True)
             # Display available territories to attack from
             self.print_territory_info(attacking_territories)
-            attacking_territory_choice = int(input('Select the number of the territory you\'d like to attack from: '))
+            query = 'Select the number of the territory you\'d like to attack from: '
+            attacking_territory_choice = retrieve_numerical_input(query, len(attacking_territories) - 1)
             to_attack_from = attacking_territories[attacking_territory_choice]
 
             # Engage in battle
             while True:
                 defending_player = to_be_attacked.occupying_player
-                attacking_armies = int(input('How many armies do you want to attack with? (up to {}) '.format(
-                    3 if to_attack_from.occupying_armies >= 4 else to_attack_from.occupying_armies - 1,
-                )))
-                defending_armies = int(input('{}, how many armies do you want to defend {} with? (up to {}) '.format(
+                attack_limit = 3 if to_attack_from.occupying_armies >= 4 else to_attack_from.occupying_armies - 1
+                query = 'How many armies do you want to attack with? (up to {}) '.format(attack_limit)
+                attacking_armies = retrieve_numerical_input(query, attack_limit)
+                defend_limit = 2 if to_be_attacked.occupying_armies >= 2 else 1
+                query = '{}, how many armies do you want to defend {} with? (up to {}) '.format(
                     defending_player.name,
                     to_be_attacked.name,
-                    2 if to_be_attacked.occupying_armies >= 2 else 1,
-                )))
+                    defend_limit,
+                )
+                defending_armies = retrieve_numerical_input(query, defend_limit)
                 to_attack_with_count_before = to_attack_from.occupying_armies
                 to_be_attacked_count_before = to_be_attacked.occupying_armies
                 self.attack_territory(to_attack_from, to_be_attacked, attacking_armies, defending_armies)
@@ -375,14 +383,14 @@ class GameOfRisk:
                         to_be_attacked.name,
                         to_be_attacked.occupying_armies,
                     ))
+                    move_limit = to_attack_from.occupying_armies - 1
                     if len(self.players) == 1:
                         return
-                    if to_attack_from.occupying_armies - 1 > 0:
-                        num_armies = int(
-                            input('How many additional armies would you like to move there? (up to {}) '.format(
-                                to_attack_from.occupying_armies - 1,
-                            ))
+                    if move_limit > 0:
+                        query = 'How many additional armies would you like to move there? (up to {}) '.format(
+                                move_limit,
                         )
+                        num_armies = retrieve_numerical_input(query, move_limit)
                         self.fortify_territory(to_attack_from, to_be_attacked, num_armies)
                     break
 
@@ -411,30 +419,40 @@ class GameOfRisk:
 
                 # Choose to continue the fight
                 else:
-                    fight = int(input('Would you like to continue the battle? (1 = yes, 0 = no) '))
+                    query = 'Would you like to continue the battle? (1 = yes, 0 = no) '
+                    fight = retrieve_numerical_input(query, 1)
                     if fight == 0:
                         break
             if not any([t.occupying_armies > 1 for t in player.controlled_territories]):
                 break
-            attack = int(input('Would you like to attack another territory? (1 = yes, 0 = no) '))
+            query = 'Would you like to attack another territory? (1 = yes, 0 = no) '
+            attack = retrieve_numerical_input(query, 1)
 
         # Phase 3: fortify
-        print('\nPHASE 3: FORTIFY\n')
+        territories_to_fortify = self.get_territories_to_fortify(player)
 
-        fortify = int(input('Would you like to fortify any territories? (1 = yes, 0 = no) '))
+        fortify = 0
+        if len(territories_to_fortify) > 0:
+            print('\nPHASE 3: FORTIFY\n')
+            query = 'Would you like to fortify any territories? (1 = yes, 0 = no) '
+            fortify = retrieve_numerical_input(query, 1)
         if fortify == 1:
-            self.print_territory_info(player.controlled_territories)
-            index_from = int(input('Select the number of the territory you\'d like to move armies from: '))
-            territory_from = player.controlled_territories[index_from]
-            occupied_neighbors = self.get_surrounding_territories(player, territory_from)
-            self.print_territory_info(occupied_neighbors)
-            index_to = int(input('Select the number of the territory you\'d like to move armies to: '))
-            territory_to = occupied_neighbors[index_to]
-            num_armies = int(input('How many armies would you like to move from {} to {}? (up to {}) '.format(
+            self.print_territory_info(territories_to_fortify)
+            query = 'Select the number of the territory you\'d like to move armies to: '
+            index_to = retrieve_numerical_input(query, len(territories_to_fortify) - 1)
+            territory_to = territories_to_fortify[index_to]
+            occupied_territories = self.get_surrounding_territories(player, territory_to)
+            self.print_territory_info(occupied_territories)
+            query = 'Select the number of the territory you\'d like to move armies from: '
+            index_from = retrieve_numerical_input(query, len(occupied_territories) - 1)
+            territory_from = occupied_territories[index_from]
+            fortify_limit = territory_from.occupying_armies - 1
+            query = 'How many armies would you like to move from {} to {}? (up to {}) '.format(
                 territory_from.name,
                 territory_to.name,
-                territory_from.occupying_armies - 1,
-            )))
+                fortify_limit,
+            )
+            num_armies = retrieve_numerical_input(query, fortify_limit)
             self.fortify_territory(territory_from, territory_to, num_armies)
         print('\nEnd of turn.\n')
 
@@ -465,6 +483,16 @@ class GameOfRisk:
         return territories_for_attack
 
     @staticmethod
+    def get_territories_to_fortify(player):
+        territories_to_fortify = []
+        for territory in player.controlled_territories:
+            if territory.occupying_armies > 1:
+                for neighbor in territory.neighbors:
+                    if neighbor.occupying_player == player and neighbor not in territories_to_fortify:
+                        territories_to_fortify.append(neighbor)
+        return territories_to_fortify
+
+    @staticmethod
     def print_battle_report(losing_territory, loss_amount):
         army_description = 'armies' if loss_amount > 1 else 'army'
         print('{} lost {} {} from {}.'.format(
@@ -478,10 +506,12 @@ class GameOfRisk:
     def print_territory_info(territory_list):
         print('\n')
         for i, territory in enumerate(territory_list):
-            print('[{}] {}, {} -- {} armies'.format(
+            occupant = territory.occupying_player.name if territory.occupying_player else 'unoccupied'
+            print('[{}] {}, {} -- {}, {} armies'.format(
                 i,
                 territory.name,
                 territory.continent,
+                occupant,
                 territory.occupying_armies,
             ))
         print('\n')
