@@ -24,7 +24,6 @@ def draw_risk_map(territory_list, continent_dict, title):
     positions = dict()
     labels = dict()
     distance = 3 / len(territory_list)
-    node_size = 2000
     # Breadth first traversal
     territory_queue = []
     visited = {t.name: {'checked': False, 'pos': (0, 0)} for t in territory_list}
@@ -54,7 +53,7 @@ def draw_risk_map(territory_list, continent_dict, title):
     networkx.draw(
         risk_map,
         pos=positions,
-        node_size=node_size,
+        node_size=2000,
         node_color=colors,
         edge_color='#bdc2c9',
         labels=labels,
