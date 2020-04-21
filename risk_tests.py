@@ -167,6 +167,10 @@ class WorldWar2Test(TestCase):
                   'Asia --> Dutch East Indies'
         self.assertEqual(str(self.g), correct)
 
+    def test_continents(self):
+        correct = {'Europe': '#e66a6a', 'Asia': '#6ab2e6'}
+        self.assertEqual(self.g.continents, correct)
+
     def test_allocate_armies(self):
         self.assertEqual(self.roosevelt.army_count, 20)
 

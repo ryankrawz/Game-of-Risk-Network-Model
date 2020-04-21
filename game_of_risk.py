@@ -60,12 +60,15 @@ class Territory:
 class GameOfRisk:
     ARMY_AWARD_MIN = 3
     CARD_TRADE_INCREMENT = 2
+    CONTINENT_COUNTER = 0
+    CONTINENT_LIMIT = 5
     INITIAL_ARMY_MIN = 20
     INITIAL_CARD_TRADE = 4
+    MAP_COLORS = ['#e66a6a', '#6ab2e6', '#97e699', '#f3f57a', '#edb277']
     PLAYER_MIN = 3
     PLAYER_MAX = 6
     TERRITORIES_MIN_ARMY_AWARD = 8
-    TERRITORY_LIMIT = 100
+    TERRITORY_LIMIT = 50
 
     """
     Example text data file below. First line is only title of game, second line is number of human players
@@ -86,6 +89,7 @@ class GameOfRisk:
         self.players = []
         self.eliminated_players = []
         self.all_territories = []
+        self.continents = dict()
         self.armies_for_card_trade = self.INITIAL_CARD_TRADE
         # Read each line of data file to populate information for game
         with open(game_file, 'r') as f:
@@ -210,6 +214,13 @@ class GameOfRisk:
         self.change_armies(to_territory, num_armies)
 
     def get_or_create_territory(self, territory_name, continent_name):
+        # Track continent color for visualization
+        if continent_name and continent_name not in self.continents:
+            # Number of continents exceeds limit
+            if self.CONTINENT_COUNTER >= self.CONTINENT_LIMIT:
+                raise Exception('{} is the maximum number of continents allowed'.format(self.CONTINENT_LIMIT))
+            self.continents[continent_name] = self.MAP_COLORS[self.CONTINENT_COUNTER]
+            self.CONTINENT_COUNTER += 1
         for territory in self.all_territories:
             if territory.name == territory_name:
                 # Continent field updated if territory was first declared as neighbor
