@@ -1,4 +1,8 @@
 from random import randint
+from tkinter import Tk
+
+from matplotlib import pyplot
+import networkx
 
 from input_utilities import retrieve_numerical_input
 
@@ -58,17 +62,23 @@ class Territory:
 
 
 class GameOfRisk:
+    # Game settings
     ARMY_AWARD_MIN = 3
     CARD_TRADE_INCREMENT = 2
     CONTINENT_COUNTER = 0
     CONTINENT_LIMIT = 5
     INITIAL_ARMY_MIN = 20
     INITIAL_CARD_TRADE = 4
-    MAP_COLORS = ['#e66a6a', '#6ab2e6', '#97e699', '#f3f57a', '#edb277']
     PLAYER_MIN = 3
     PLAYER_MAX = 6
     TERRITORIES_MIN_ARMY_AWARD = 8
     TERRITORY_LIMIT = 50
+    # Visualization settings
+    EDGE_COLOR = '#bdc2c9'
+    FONT_SIZE = 5
+    FONT_WEIGHT = 'bold'
+    MAP_COLORS = ['#e66a6a', '#6ab2e6', '#97e699', '#f3f57a', '#edb277']
+    NODE_SIZE = 500
 
     """
     Example text data file below. First line is only title of game, second line is number of human players
@@ -85,12 +95,19 @@ class GameOfRisk:
     """
 
     def __init__(self, game_file):
+        # Game attributes
         self.title = ''
         self.players = []
         self.eliminated_players = []
         self.all_territories = []
         self.continents = dict()
         self.armies_for_card_trade = self.INITIAL_CARD_TRADE
+        # Visualization attributes
+        self.risk_map = networkx.Graph()
+        self.node_colors = []
+        self.labels = dict()
+        self.layout = None
+        self.window_dimensions = self.get_window_dimensions()
         # Read each line of data file to populate information for game
         with open(game_file, 'r') as f:
             i = 0
@@ -128,6 +145,7 @@ class GameOfRisk:
                 ))
         self.card_deck = RiskDeck(len(self.all_territories))
         self.allocate_armies()
+        self.position_risk_map()
 
     def __str__(self):
         return '{}\nPlaying: {}\nEliminated: {}\nTerritories:\n{}'.format(
@@ -202,6 +220,21 @@ class GameOfRisk:
                 self.armies_for_card_trade += self.CARD_TRADE_INCREMENT
                 return armies_from_cards
         return 0
+
+    def draw_risk_map(self):
+        self.update_risk_map()
+        pyplot.figure(num=self.title, figsize=self.window_dimensions)
+        networkx.draw(
+            self.risk_map,
+            pos=self.layout,
+            node_size=self.NODE_SIZE,
+            node_color=self.node_colors,
+            edge_color=self.EDGE_COLOR,
+            labels=self.labels,
+            font_size=self.FONT_SIZE,
+            font_weight=self.FONT_WEIGHT,
+        )
+        pyplot.show()
 
     def eliminate_player(self, player):
         self.card_deck.give_back(player.cards)
@@ -278,6 +311,26 @@ class GameOfRisk:
         winner = self.players[0].name
         confetti = '*' * (len(winner) + 8)
         print('\n{0}\n*{1} wins!*\n{0}\n'.format(confetti, winner))
+
+    def position_risk_map(self):
+        for territory in self.all_territories:
+            # Include territory in map
+            self.risk_map.add_node(territory.name)
+            # Specify color respective of continent
+            self.node_colors.append(self.continents[territory.continent])
+            army_tag = 'army' if territory.occupying_armies == 1 else 'armies'
+            occupier = '' if not territory.occupying_player else territory.occupying_player.name
+            # Label territory with name, army count, and occupying player
+            self.labels[territory.name] = '{}\n{} {}\n{}'.format(
+                territory.name,
+                territory.occupying_armies,
+                army_tag,
+                occupier,
+            )
+            for neighbor in territory.neighbors:
+                self.risk_map.add_edge(territory.name, neighbor.name)
+        # Position nodes using admittance matrix vectors
+        self.layout = networkx.spectral_layout(self.risk_map)
 
     def select_territory_initial(self, player, territory, num_armies):
         self.change_armies(territory, num_armies)
@@ -467,6 +520,18 @@ class GameOfRisk:
             self.fortify_territory(territory_from, territory_to, num_armies)
         print('\nEnd of turn.\n')
 
+    def update_risk_map(self):
+        for territory in self.all_territories:
+            army_tag = 'army' if territory.occupying_armies == 1 else 'armies'
+            occupier = '' if not territory.occupying_player else territory.occupying_player.name
+            # Label territory with name, army count, and occupying player
+            self.labels[territory.name] = '{}\n{} {}\n{}'.format(
+                territory.name,
+                territory.occupying_armies,
+                army_tag,
+                occupier,
+            )
+
     @staticmethod
     # Accepts positive or negative integer to increase or decrease armies in a territory
     def change_armies(territory, num_armies):
@@ -502,6 +567,14 @@ class GameOfRisk:
                     if neighbor.occupying_player == player and neighbor not in territories_to_fortify:
                         territories_to_fortify.append(neighbor)
         return territories_to_fortify
+
+    @staticmethod
+    def get_window_dimensions():
+        tk_window = Tk()
+        # Match window dimensions to aspect ratio of computer
+        dimensions = (tk_window.winfo_screenmmwidth() / 30, tk_window.winfo_screenmmheight() / 40)
+        tk_window.destroy()
+        return dimensions
 
     @staticmethod
     def print_battle_report(losing_territory, loss_amount):
