@@ -314,7 +314,7 @@ class GameOfRisk:
         for territory in self.all_territories:
             # Include territory in map
             self.risk_map.add_node(territory.name)
-            # Specify color respective of continent
+            # Initiate with empty color
             self.node_colors.append(self.EMPTY_NODE_COLOR)
             # Label territory with name, army count, and occupying player
             self.labels[territory.name] = '{}\n0 armies\n'.format(territory.name)
@@ -518,10 +518,11 @@ class GameOfRisk:
         print('\nEnd of turn.\n')
 
     def update_risk_map(self):
+        node_list = list(self.risk_map.nodes)
         for territory in self.all_territories:
             # Change color to reflect occupation
             if territory.occupying_player:
-                node_index = list(self.risk_map.nodes).index(territory.name)
+                node_index = node_list.index(territory.name)
                 self.node_colors[node_index] = self.player_colors[territory.occupying_player.name]
             army_tag = 'army' if territory.occupying_armies == 1 else 'armies'
             occupier = '' if not territory.occupying_player else territory.occupying_player.name
