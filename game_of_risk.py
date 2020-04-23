@@ -305,6 +305,11 @@ class GameOfRisk:
         self.initial_army_placement()
         current_turn = 0
         while len(self.players) > 1:
+            query = 'Would you like to see the map? Close the window when finished (1 = yes, 0 = no) '
+            open_map = retrieve_numerical_input(query, 1)
+            if open_map:
+                # Visualize risk map
+                self.draw_risk_map()
             self.turn(self.players[current_turn])
             # Index next player for turn or cycle back to first player
             current_turn = current_turn + 1 if current_turn < len(self.players) - 1 else 0
@@ -318,15 +323,8 @@ class GameOfRisk:
             self.risk_map.add_node(territory.name)
             # Specify color respective of continent
             self.node_colors.append(self.continents[territory.continent])
-            army_tag = 'army' if territory.occupying_armies == 1 else 'armies'
-            occupier = '' if not territory.occupying_player else territory.occupying_player.name
             # Label territory with name, army count, and occupying player
-            self.labels[territory.name] = '{}\n{} {}\n{}'.format(
-                territory.name,
-                territory.occupying_armies,
-                army_tag,
-                occupier,
-            )
+            self.labels[territory.name] = '{}\n0 armies\n'.format(territory.name)
             for neighbor in territory.neighbors:
                 self.risk_map.add_edge(territory.name, neighbor.name)
         # Position nodes using admittance matrix vectors
@@ -382,7 +380,7 @@ class GameOfRisk:
 
     def turn(self, player):
         border = '-' * (len(player.name) + 12)
-        print('{0}\n| {1}\'s turn. |\n{0}'.format(border, player.name))
+        print('\n{0}\n| {1}\'s turn. |\n{0}'.format(border, player.name))
 
         # Phase 1: reinforce
         print('\nPHASE 1: REINFORCE\n')
