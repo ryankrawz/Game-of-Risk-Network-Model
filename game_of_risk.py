@@ -65,8 +65,7 @@ class GameOfRisk:
     # Game settings
     ARMY_AWARD_MIN = 3
     CARD_TRADE_INCREMENT = 2
-    CONTINENT_COUNTER = 0
-    CONTINENT_LIMIT = 5
+    COLOR_COUNTER = 0
     INITIAL_ARMY_MIN = 20
     INITIAL_CARD_TRADE = 4
     PLAYER_MIN = 3
@@ -75,9 +74,10 @@ class GameOfRisk:
     TERRITORY_LIMIT = 50
     # Visualization settings
     EDGE_COLOR = '#bdc2c9'
+    EMPTY_NODE_COLOR = '#adb1b8'
     FONT_SIZE = 5
     FONT_WEIGHT = 'bold'
-    MAP_COLORS = ['#e66a6a', '#6ab2e6', '#97e699', '#f3f57a', '#edb277']
+    COLORS = ['#e66a6a', '#6ab2e6', '#97e699', '#f3f57a', '#edb277', '#d39ef0']
     NODE_SIZE = 500
 
     """
@@ -100,7 +100,7 @@ class GameOfRisk:
         self.players = []
         self.eliminated_players = []
         self.all_territories = []
-        self.continents = dict()
+        self.player_colors = dict()
         self.armies_for_card_trade = self.INITIAL_CARD_TRADE
         # Visualization attributes
         self.risk_map = networkx.Graph()
@@ -247,13 +247,6 @@ class GameOfRisk:
         self.change_armies(to_territory, num_armies)
 
     def get_or_create_territory(self, territory_name, continent_name):
-        # Track continent color for visualization
-        if continent_name and continent_name not in self.continents:
-            # Number of continents exceeds limit
-            if self.CONTINENT_COUNTER >= self.CONTINENT_LIMIT:
-                raise Exception('{} is the maximum number of continents allowed'.format(self.CONTINENT_LIMIT))
-            self.continents[continent_name] = self.MAP_COLORS[self.CONTINENT_COUNTER]
-            self.CONTINENT_COUNTER += 1
         for territory in self.all_territories:
             if territory.name == territory_name:
                 # Continent field updated if territory was first declared as neighbor
@@ -322,13 +315,13 @@ class GameOfRisk:
             # Include territory in map
             self.risk_map.add_node(territory.name)
             # Specify color respective of continent
-            self.node_colors.append(self.continents[territory.continent])
+            self.node_colors.append(self.EMPTY_NODE_COLOR)
             # Label territory with name, army count, and occupying player
             self.labels[territory.name] = '{}\n0 armies\n'.format(territory.name)
             for neighbor in territory.neighbors:
                 self.risk_map.add_edge(territory.name, neighbor.name)
-        # Position nodes using admittance matrix vectors
-        self.layout = networkx.spectral_layout(self.risk_map)
+        # Position nodes using a cost function based on path length
+        self.layout = networkx.kamada_kawai_layout(self.risk_map)
 
     def select_territory_initial(self, player, territory, num_armies):
         self.change_armies(territory, num_armies)
@@ -345,10 +338,16 @@ class GameOfRisk:
         try:
             while i < num_players + 1:
                 if info_items[i]:
+                    player_name = info_items[i].strip()
                     if is_human:
-                        self.players.append(HumanPlayer(info_items[i].strip()))
+                        self.players.append(HumanPlayer(player_name))
                     else:
-                        self.players.append(ComputerPlayer(info_items[i].strip()))
+                        self.players.append(ComputerPlayer(player_name))
+                    # Track player color for visualization
+                    if self.COLOR_COUNTER >= len(self.COLORS):
+                        raise Exception('too many {} players have been declared'.format(player_type))
+                    self.player_colors[player_name] = self.COLORS[self.COLOR_COUNTER]
+                    self.COLOR_COUNTER += 1
                     i += 1
                 else:
                     raise Exception('a {} player with no name has been declared'.format(player_type))
@@ -520,6 +519,10 @@ class GameOfRisk:
 
     def update_risk_map(self):
         for territory in self.all_territories:
+            # Change color to reflect occupation
+            if territory.occupying_player:
+                node_index = list(self.risk_map.nodes).index(territory.name)
+                self.node_colors[node_index] = self.player_colors[territory.occupying_player.name]
             army_tag = 'army' if territory.occupying_armies == 1 else 'armies'
             occupier = '' if not territory.occupying_player else territory.occupying_player.name
             # Label territory with name, army count, and occupying player
