@@ -73,6 +73,7 @@ class GameOfRisk:
     TERRITORIES_MIN_ARMY_AWARD = 8
     TERRITORY_LIMIT = 50
     # Visualization settings
+    ALL_WINDOWS = 'all'
     EDGE_COLOR = '#bdc2c9'
     EMPTY_NODE_COLOR = '#adb1b8'
     FONT_SIZE = 5
@@ -104,6 +105,8 @@ class GameOfRisk:
         self.armies_for_card_trade = self.INITIAL_CARD_TRADE
         # Visualization attributes
         self.risk_map = networkx.Graph()
+        self.root = Tk()
+        self.root.withdraw()
         self.node_colors = []
         self.labels = dict()
         self.layout = None
@@ -143,7 +146,8 @@ class GameOfRisk:
                 raise Exception('{} has been specified as a neighbor but has not been declared itself'.format(
                     territory.name
                 ))
-        self.card_deck = RiskDeck(len(self.all_territories))
+        # Players can hold 7 cards at most
+        self.card_deck = RiskDeck(7 * len(self.players))
         self.allocate_armies()
         self.position_risk_map()
 
@@ -223,6 +227,8 @@ class GameOfRisk:
 
     def draw_risk_map(self):
         self.update_risk_map()
+        pyplot.close(self.ALL_WINDOWS)
+        self.root.update_idletasks()
         pyplot.figure(num=self.title, figsize=self.window_dimensions)
         networkx.draw(
             self.risk_map,
@@ -234,7 +240,7 @@ class GameOfRisk:
             font_size=self.FONT_SIZE,
             font_weight=self.FONT_WEIGHT,
         )
-        pyplot.show()
+        pyplot.show(block=False)
 
     def eliminate_player(self, player):
         self.card_deck.give_back(player.cards)
@@ -256,6 +262,10 @@ class GameOfRisk:
         new_territory = Territory(territory_name, continent_name)
         self.all_territories.append(new_territory)
         return new_territory
+
+    def get_window_dimensions(self):
+        # Match window dimensions to aspect ratio of computer
+        return self.root.winfo_screenmmwidth() / 30, self.root.winfo_screenmmheight() / 40
 
     def initial_army_placement(self):
         available_territories = list.copy(self.all_territories)
@@ -298,17 +308,18 @@ class GameOfRisk:
         self.initial_army_placement()
         current_turn = 0
         while len(self.players) > 1:
-            query = 'Would you like to see the map? Close the window when finished (1 = yes, 0 = no) '
-            open_map = retrieve_numerical_input(query, 1)
-            if open_map:
-                # Visualize risk map
-                self.draw_risk_map()
+            # Visualize risk map
+            self.draw_risk_map()
             self.turn(self.players[current_turn])
             # Index next player for turn or cycle back to first player
             current_turn = current_turn + 1 if current_turn < len(self.players) - 1 else 0
         winner = self.players[0].name
         confetti = '*' * (len(winner) + 8)
         print('\n{0}\n*{1} wins!*\n{0}\n'.format(confetti, winner))
+        # Spin down visualization
+        pyplot.close(self.ALL_WINDOWS)
+        self.root.update_idletasks()
+        self.root.destroy()
 
     def position_risk_map(self):
         for territory in self.all_territories:
@@ -484,6 +495,8 @@ class GameOfRisk:
                     fight = retrieve_numerical_input(query, 1)
                     if fight == 0:
                         break
+            # Display risk map following battle sequence
+            self.draw_risk_map()
             if not any([t.occupying_armies > 1 for t in player.controlled_territories]):
                 break
             query = 'Would you like to attack another territory? (1 = yes, 0 = no) '
@@ -569,14 +582,6 @@ class GameOfRisk:
                     if neighbor.occupying_player == player and neighbor not in territories_to_fortify:
                         territories_to_fortify.append(neighbor)
         return territories_to_fortify
-
-    @staticmethod
-    def get_window_dimensions():
-        tk_window = Tk()
-        # Match window dimensions to aspect ratio of computer
-        dimensions = (tk_window.winfo_screenmmwidth() / 30, tk_window.winfo_screenmmheight() / 40)
-        tk_window.destroy()
-        return dimensions
 
     @staticmethod
     def print_battle_report(losing_territory, loss_amount):
