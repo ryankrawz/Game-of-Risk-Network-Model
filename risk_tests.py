@@ -3,20 +3,203 @@ from unittest import mock, TestCase
 from game_of_risk import GameOfRisk
 
 
+class ComputerPlayerTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.print_patch = mock.patch('builtins.print', side_effect=lambda s: None)
+        self.print_patch.start()
+        self.slow_patch = mock.patch('game_of_risk.GameOfRisk.print_slow', side_effect=lambda t: None)
+        self.slow_patch.start()
+        self.draw_patch = mock.patch('game_of_risk.GameOfRisk.draw_risk_map', side_effect=lambda: None)
+        self.draw_patch.start()
+        self.g = GameOfRisk('test_games/world_war_2_test.txt')
+        self.stalin = self.g.players[4]
+        self.hirohito = self.g.players[5]
+        self.germany = self.g.all_territories[5]
+        self.switzerland = self.g.all_territories[6]
+        self.italy = self.g.all_territories[7]
+        self.ussr = self.g.all_territories[19]
+        self.latvia = self.g.all_territories[20]
+        self.korea = self.g.all_territories[25]
+        self.switzerland.occupying_player = self.stalin
+
+    def tearDown(self):
+        super().tearDown()
+        self.print_patch.stop()
+        self.slow_patch.stop()
+        self.draw_patch.stop()
+
+    def test_armies_to_move_all_friendly(self):
+        for neighbor in self.switzerland.neighbors:
+            neighbor.occupying_player = self.stalin
+        num_armies = self.stalin.armies_to_move(self.switzerland, 10)
+        self.assertEqual(num_armies, 10)
+
+    def test_armies_to_move_with_enemy(self):
+        for neighbor in self.switzerland.neighbors:
+            neighbor.occupying_player = self.stalin
+        self.switzerland.neighbors[3].occupying_player = self.hirohito
+        num_armies = self.stalin.armies_to_move(self.switzerland, 10)
+        self.assertEqual(num_armies, 5)
+
+    def test_choose_attack_route_all_friendly(self):
+        self.switzerland.occupying_player = self.hirohito
+        self.switzerland.occupying_armies = 7
+        neighbor_armies = [4, 1, 5, 2]
+        for i in range(len(self.switzerland.neighbors)):
+            self.switzerland.neighbors[i].occupying_player = self.hirohito
+            self.switzerland.neighbors[i].occupying_armies = neighbor_armies[i]
+        attack_route = self.stalin.choose_attack_route([self.switzerland], 3)
+        self.assertIsNone(attack_route)
+
+    def test_choose_attack_route_with_enemy(self):
+        self.switzerland.occupying_player = self.hirohito
+        self.switzerland.occupying_armies = 1
+        neighbor_armies = [4, 7, 5, 2]
+        for i in range(len(self.switzerland.neighbors)):
+            if i == 1:
+                self.switzerland.neighbors[i].occupying_player = self.hirohito
+            else:
+                self.switzerland.neighbors[i].occupying_player = self.stalin
+            self.switzerland.neighbors[i].occupying_armies = neighbor_armies[i]
+        attack_route = self.stalin.choose_attack_route([self.switzerland], 3)
+        self.assertEqual(attack_route, (self.switzerland.neighbors[2], self.switzerland))
+
+    def test_choose_fortify_route_no_connection(self):
+        self.switzerland.occupying_armies = 1
+        self.korea.occupying_player = self.stalin
+        self.korea.occupying_armies = 1
+        self.stalin.controlled_territories = [self.switzerland, self.korea]
+        switzerland_neighbor_armies = [3, 7, 8, 4]
+        for i in range(len(self.switzerland.neighbors)):
+            self.switzerland.neighbors[i].occupying_player = self.hirohito
+            self.switzerland.neighbors[i].occupying_armies = switzerland_neighbor_armies[i]
+        korea_neighbor_armies = [2, 6, 5]
+        for i in range(len(self.korea.neighbors)):
+            self.korea.neighbors[i].occupying_player = self.hirohito
+            self.korea.neighbors[i].occupying_armies = korea_neighbor_armies[i]
+        differential = self.stalin.army_count_differential(self.switzerland)
+        self.assertEqual(differential, 22)
+        fortify_route = self.stalin.choose_fortify_route()
+        self.assertIsNone(fortify_route)
+
+    def test_choose_fortify_route_higher_differential(self):
+        self.switzerland.occupying_armies = 1
+        self.germany.occupying_player = self.stalin
+        self.germany.occupying_armies = 1
+        self.italy.occupying_player = self.stalin
+        self.italy.occupying_armies = 1
+        self.stalin.controlled_territories = [self.switzerland, self.germany, self.italy]
+        germany_neighbor_armies = [2, 4, 3, 5, 1, 3, 9, 1]
+        for i in range(len(self.germany.neighbors)):
+            if self.germany.neighbors[i] != self.switzerland:
+                self.germany.neighbors[i].occupying_player = self.hirohito
+                self.germany.neighbors[i].occupying_armies = germany_neighbor_armies[i]
+        italy_neighbor_armies = [8, 5, 7, 2, 2, 3]
+        for i in range(len(self.italy.neighbors)):
+            if self.italy.neighbors[i] != self.switzerland:
+                self.italy.neighbors[i].occupying_player = self.hirohito
+                self.italy.neighbors[i].occupying_armies = italy_neighbor_armies[i]
+        differential = self.stalin.army_count_differential(self.italy)
+        self.assertEqual(differential, 22)
+        fortify_route = self.stalin.choose_fortify_route()
+        self.assertEqual(fortify_route, (self.switzerland, self.germany))
+
+    def test_claim_territory_empty_neighbors(self):
+        self.stalin.controlled_territories = [self.switzerland]
+        claimed_territory = self.stalin.claim_territory(self.switzerland.neighbors)
+        self.assertEqual(claimed_territory, self.switzerland.neighbors[1])
+
+    def test_claim_territory_no_empty_neighbors(self):
+        self.stalin.controlled_territories = [self.switzerland]
+        for neighbor in self.switzerland.neighbors:
+            neighbor.occupying_player = self.hirohito
+            neighbor.occupying_armies = 1
+        claimed_territory = self.stalin.claim_territory([self.latvia, self.korea, self.ussr])
+        self.assertEqual(claimed_territory, self.korea)
+
+    def test_enemy_adjacent_territories_all_friendly(self):
+        for neighbor in self.switzerland.neighbors:
+            neighbor.occupying_player = self.stalin
+        for neighbor in self.germany.neighbors:
+            neighbor.occupying_player = self.stalin
+        for neighbor in self.italy.neighbors:
+            neighbor.occupying_player = self.stalin
+        enemy_adjacent = self.stalin.enemy_adjacent_territories([self.switzerland, self.germany, self.italy])
+        self.assertEqual(enemy_adjacent, [])
+
+    def test_enemy_adjacent_territories_bordering_enemy(self):
+        for neighbor in self.switzerland.neighbors:
+            neighbor.occupying_player = self.stalin
+        for neighbor in self.germany.neighbors:
+            neighbor.occupying_player = self.stalin
+        for neighbor in self.italy.neighbors:
+            neighbor.occupying_player = self.stalin
+        self.germany.neighbors[4].occupying_player = self.hirohito
+        self.italy.neighbors[5].occupying_player = self.hirohito
+        enemy_adjacent = self.stalin.enemy_adjacent_territories([self.switzerland, self.germany, self.italy])
+        self.assertEqual(enemy_adjacent, [self.germany, self.italy])
+
+    def test_lowest_army_count_same(self):
+        self.stalin.controlled_territories = [self.switzerland, self.germany, self.italy]
+        for territory in self.stalin.controlled_territories:
+            territory.occupying_armies = 2
+        lowest_army_territory = self.stalin.lowest_army_count()
+        self.assertEqual(lowest_army_territory, self.switzerland)
+
+    def test_lowest_army_count_different(self):
+        self.stalin.controlled_territories = [self.switzerland, self.germany, self.italy]
+        army_counts = [2, 3, 1]
+        for i in range(len(self.stalin.controlled_territories)):
+            self.stalin.controlled_territories[i].occupying_armies = army_counts[i]
+        lowest_army_territory = self.stalin.lowest_army_count()
+        self.assertEqual(lowest_army_territory, self.italy)
+
+    def test_reinforce_initial(self):
+        self.stalin.army_count = 20
+        for neighbor in self.switzerland.neighbors:
+            neighbor.occupying_player = self.stalin
+        for neighbor in self.germany.neighbors:
+            neighbor.occupying_player = self.stalin
+        for neighbor in self.italy.neighbors:
+            neighbor.occupying_player = self.stalin
+        self.stalin.controlled_territories = [self.switzerland, self.germany, self.italy]
+        self.germany.neighbors[4].occupying_player = self.hirohito
+        self.italy.neighbors[5].occupying_player = self.hirohito
+        reinforce_names = self.stalin.reinforce_initial()
+        self.assertEqual(self.germany.occupying_armies, 10)
+        self.assertEqual(self.italy.occupying_armies, 10)
+        self.assertEqual(reinforce_names, ['Germany', 'Italy'])
+
+    def test_get_unoccupied_neighbors(self):
+        self.germany.occupying_player = self.stalin
+        self.germany.occupying_armies = 1
+        self.italy.occupying_player = self.stalin
+        self.italy.occupying_armies = 1
+        unoccupied_neighbors = self.stalin.get_unoccupied_neighbors([self.switzerland, self.germany, self.italy])
+        unoccupied_names = [t.name for t in unoccupied_neighbors]
+        self.assertEqual(unoccupied_names, ['France', 'Austria', 'Belgium', 'Netherlands', 'Denmark', 'Poland',
+                                            'Czechoslovakia', 'Switzerland', 'Yugoslavia', 'Albania', 'Greece'])
+
+    def test_lowest_neighbor_count(self):
+        fewest_neighbor_territory = self.stalin.lowest_neighbor_count([self.switzerland, self.germany, self.italy])
+        self.assertEqual(fewest_neighbor_territory, self.switzerland)
+
+
 class InputUtilitiesTest(TestCase):
     def setUp(self):
         super().setUp()
         self.print_patch = mock.patch('builtins.print', side_effect=lambda s: None)
         self.print_patch.start()
-        self.sleep_patch = mock.patch('time.sleep', side_effect=lambda t: None)
-        self.sleep_patch.start()
+        self.slow_patch = mock.patch('game_of_risk.GameOfRisk.print_slow', side_effect=lambda t: None)
+        self.slow_patch.start()
         self.draw_patch = mock.patch('game_of_risk.GameOfRisk.draw_risk_map', side_effect=lambda: None)
         self.draw_patch.start()
 
     def tearDown(self):
         super().tearDown()
         self.print_patch.stop()
-        self.sleep_patch.stop()
+        self.slow_patch.stop()
         self.draw_patch.stop()
 
     @mock.patch('builtins.input')
@@ -32,8 +215,8 @@ class RevolutionaryWarAllHumanTest(TestCase):
         super().setUp()
         self.print_patch = mock.patch('builtins.print', side_effect=lambda s: None)
         self.print_patch.start()
-        self.sleep_patch = mock.patch('time.sleep', side_effect=lambda t: None)
-        self.sleep_patch.start()
+        self.slow_patch = mock.patch('game_of_risk.GameOfRisk.print_slow', side_effect=lambda t: None)
+        self.slow_patch.start()
         self.draw_patch = mock.patch('game_of_risk.GameOfRisk.draw_risk_map', side_effect=lambda: None)
         self.draw_patch.start()
         self.g = GameOfRisk('test_games/revolutionary_war_all_human.txt')
@@ -49,7 +232,7 @@ class RevolutionaryWarAllHumanTest(TestCase):
     def tearDown(self):
         super().tearDown()
         self.print_patch.stop()
-        self.sleep_patch.stop()
+        self.slow_patch.stop()
         self.draw_patch.stop()
 
     @mock.patch('builtins.input')
@@ -126,8 +309,8 @@ class WorldWar2Test(TestCase):
         super().setUp()
         self.print_patch = mock.patch('builtins.print', side_effect=lambda s: None)
         self.print_patch.start()
-        self.sleep_patch = mock.patch('time.sleep', side_effect=lambda t: None)
-        self.sleep_patch.start()
+        self.slow_patch = mock.patch('game_of_risk.GameOfRisk.print_slow', side_effect=lambda t: None)
+        self.slow_patch.start()
         self.draw_patch = mock.patch('game_of_risk.GameOfRisk.draw_risk_map', side_effect=lambda: None)
         self.draw_patch.start()
         self.g = GameOfRisk('test_games/world_war_2_test.txt')
@@ -139,7 +322,7 @@ class WorldWar2Test(TestCase):
     def tearDown(self):
         super().tearDown()
         self.print_patch.stop()
-        self.sleep_patch.stop()
+        self.slow_patch.stop()
         self.draw_patch.stop()
 
     def calibrate_britain_and_france(self, britain_player, britain_count, france_player, france_count):
