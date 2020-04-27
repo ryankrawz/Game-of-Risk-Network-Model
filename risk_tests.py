@@ -1,7 +1,6 @@
 from unittest import mock, TestCase
 
 from game_of_risk import GameOfRisk
-from input_utilities import retrieve_numerical_input
 
 
 class InputUtilitiesTest(TestCase):
@@ -9,16 +8,22 @@ class InputUtilitiesTest(TestCase):
         super().setUp()
         self.print_patch = mock.patch('builtins.print', side_effect=lambda s: None)
         self.print_patch.start()
+        self.sleep_patch = mock.patch('time.sleep', side_effect=lambda t: None)
+        self.sleep_patch.start()
+        self.draw_patch = mock.patch('game_of_risk.GameOfRisk.draw_risk_map', side_effect=lambda: None)
+        self.draw_patch.start()
 
     def tearDown(self):
         super().tearDown()
         self.print_patch.stop()
+        self.sleep_patch.stop()
+        self.draw_patch.stop()
 
     @mock.patch('builtins.input')
     def test_retrieve_numerical_input(self, input_mock):
         input_mock.side_effect = ['-1', '10', 'xyz', '5', '4']
         query = 'How many armies? (Up to {}) '.format(4)
-        input_num = retrieve_numerical_input(query, 4)
+        input_num = GameOfRisk.retrieve_numerical_input(query, 4)
         self.assertEqual(input_num, 4)
 
 
@@ -27,6 +32,10 @@ class RevolutionaryWarAllHumanTest(TestCase):
         super().setUp()
         self.print_patch = mock.patch('builtins.print', side_effect=lambda s: None)
         self.print_patch.start()
+        self.sleep_patch = mock.patch('time.sleep', side_effect=lambda t: None)
+        self.sleep_patch.start()
+        self.draw_patch = mock.patch('game_of_risk.GameOfRisk.draw_risk_map', side_effect=lambda: None)
+        self.draw_patch.start()
         self.g = GameOfRisk('test_games/revolutionary_war_all_human.txt')
         self.america = self.g.players[0]
         self.france = self.g.players[1]
@@ -40,6 +49,8 @@ class RevolutionaryWarAllHumanTest(TestCase):
     def tearDown(self):
         super().tearDown()
         self.print_patch.stop()
+        self.sleep_patch.stop()
+        self.draw_patch.stop()
 
     @mock.patch('builtins.input')
     def place_armies(self, input_mock):
@@ -115,6 +126,10 @@ class WorldWar2Test(TestCase):
         super().setUp()
         self.print_patch = mock.patch('builtins.print', side_effect=lambda s: None)
         self.print_patch.start()
+        self.sleep_patch = mock.patch('time.sleep', side_effect=lambda t: None)
+        self.sleep_patch.start()
+        self.draw_patch = mock.patch('game_of_risk.GameOfRisk.draw_risk_map', side_effect=lambda: None)
+        self.draw_patch.start()
         self.g = GameOfRisk('test_games/world_war_2_test.txt')
         self.roosevelt = self.g.players[0]
         self.churchill = self.g.players[1]
@@ -124,6 +139,8 @@ class WorldWar2Test(TestCase):
     def tearDown(self):
         super().tearDown()
         self.print_patch.stop()
+        self.sleep_patch.stop()
+        self.draw_patch.stop()
 
     def calibrate_britain_and_france(self, britain_player, britain_count, france_player, france_count):
         britain_player.controlled_territories.append(self.great_britain)
