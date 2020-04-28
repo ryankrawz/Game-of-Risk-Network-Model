@@ -430,7 +430,7 @@ class GameOfRisk:
                 query = 'Select the number of the territory you\'d like to attack: '
                 attack_choice = self.retrieve_numerical_input(query, len(territories_for_attack) - 1)
                 to_be_attacked = territories_for_attack[attack_choice]
-                attacking_territories = self.get_surrounding_territories(player, to_be_attacked, attack=True)
+                attacking_territories = self.get_surrounding_territories(player, to_be_attacked)
                 # Display available territories to attack from
                 self.print_territory_info(attacking_territories)
                 query = 'Select the number of the territory you\'d like to attack from: '
@@ -544,13 +544,13 @@ class GameOfRisk:
                         break
             # Display risk map following battle sequence
             self.draw_risk_map()
-            if not any([t.occupying_armies > 1 for t in player.controlled_territories]):
+            territories_for_attack = self.get_territories_for_attack(player)
+            if len(territories_for_attack) == 0:
                 break
             if player.is_human:
                 query = 'Would you like to attack another territory? (1 = yes, 0 = no) '
                 attack = self.retrieve_numerical_input(query, 1)
             else:
-                territories_for_attack = self.get_territories_for_attack(player)
                 attack_route = player.choose_attack_route(territories_for_attack, 0)
                 attack = 1 if attack_route else 0
 
@@ -625,11 +625,10 @@ class GameOfRisk:
 
     @staticmethod
     # Finds list of neighbors controlled by player
-    def get_surrounding_territories(player, territory, attack=False):
-        army_req = 1 if attack else 0
+    def get_surrounding_territories(player, territory):
         surrounding_territories = []
         for neighbor in territory.neighbors:
-            if neighbor.occupying_player == player and neighbor.occupying_armies > army_req:
+            if neighbor.occupying_player == player and neighbor.occupying_armies > 1:
                 surrounding_territories.append(neighbor)
         return surrounding_territories
 

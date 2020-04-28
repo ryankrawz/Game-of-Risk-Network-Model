@@ -471,22 +471,13 @@ class WorldWar2Test(TestCase):
         self.assertEqual(self.great_britain.occupying_armies, 2)
         self.assertEqual(self.france.occupying_armies, 4)
 
-    def test_get_surrounding_territories_attack(self):
+    def test_get_surrounding_territories(self):
         territory_army_counts = [1, 2, 1, 2, 2]
-        for i in range(len(self.france.neighbors[:3])):
-            self.france.neighbors[i].occupying_player = self.roosevelt
-            self.france.neighbors[i].occupying_armies = territory_army_counts[i]
-        surrounding_territories = self.g.get_surrounding_territories(self.roosevelt, self.france, attack=True)
-        correct = ['Belgium']
-        self.assertEqual([t.name for t in surrounding_territories], correct)
-
-    def test_get_surrounding_territories_no_attack(self):
-        territory_army_counts = [1, 2, 1, 2, 2]
-        for i in range(len(self.france.neighbors[:3])):
+        for i in range(len(self.france.neighbors[:4])):
             self.france.neighbors[i].occupying_player = self.roosevelt
             self.france.neighbors[i].occupying_armies = territory_army_counts[i]
         surrounding_territories = self.g.get_surrounding_territories(self.roosevelt, self.france)
-        correct = ['Great Britain', 'Belgium', 'Germany']
+        correct = ['Belgium', 'Switzerland']
         self.assertEqual([t.name for t in surrounding_territories], correct)
 
     def test_get_territories_for_attack(self):
