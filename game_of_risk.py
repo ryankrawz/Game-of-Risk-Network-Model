@@ -425,7 +425,6 @@ class GameOfRisk:
                 attack = 1 if attack_route else 0
         while attack == 1 and len(self.players) > 1:
             if player.is_human:
-                territories_for_attack = self.get_territories_for_attack(player)
                 self.print_territory_info(territories_for_attack)
                 query = 'Select the number of the territory you\'d like to attack: '
                 attack_choice = self.retrieve_numerical_input(query, len(territories_for_attack) - 1)
