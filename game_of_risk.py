@@ -507,6 +507,7 @@ class GameOfRisk:
 
                 attack_loss = to_attack_with_count_before - to_attack_from.occupying_armies
                 defend_loss = to_be_attacked_count_before - to_be_attacked.occupying_armies
+                print('\n')
                 if attack_loss > 0 and defend_loss == 0:
                     self.print_battle_report(to_attack_from, attack_loss)
                 elif defend_loss > 0 and attack_loss == 0:
